@@ -16,9 +16,9 @@ void mainMenu();
 void middleMenu(Player*, Player*);
 void createPlayers(Player*, Player*);
 void connect4(bool*, Player*, Player*);
-void printBoard(std::vector<std::vector<int>>*, bool*, Player*);
-void checkInput(std::vector<std::vector<int>>*, Player*);
-void insertMarker(std::vector<std::vector<int>>*, Player*);
+void printBoard(std::vector<std::vector<int>>*, bool*, Player*, Player*, Player*);
+void checkInput(std::vector<std::vector<int>>*, Player*, Player*, Player*);
+void insertMarker(std::vector<std::vector<int>>*, Player*, Player*, Player*);
 std::pair <bool, int> checkWin(std::vector<std::vector<int>>*);
 
 void saveGame();

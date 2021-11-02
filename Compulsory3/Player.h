@@ -7,6 +7,7 @@ public:
 	Player();
 	~Player();
 
+	bool isCurrent;
 	int pos, color, marker;
 	std::string name;
 
