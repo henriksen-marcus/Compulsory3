@@ -3,8 +3,8 @@
 
 int main()
 {
-    time_t currentTime;
-    srand((unsigned)time(&currentTime)); // Seed the rand function with the current time
+    //time_t currentTime;
+    //srand((unsigned)time(&currentTime)); // Seed the rand function with the current time
     system("color F"); // White
     mainMenu();
 }
@@ -101,12 +101,14 @@ void middleMenu(Player* p1, Player* p2) {
             switch (pos) {
             case 1:
                 createPlayers(p1, p2);
+                return;
                 break;
             case 2:
                 p1->name = "Player 1";
                 p1->color = 0;
                 p2->name = "Player 2";
                 p2->color = 1;
+                return;
                 break;
             }
         }
@@ -313,11 +315,11 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
     // Vertical
     for (int i{}; i < ROW_WIDTH; i++) {
         for (int k{}; k < ROW_HEIGHT; k++) {
-            if (board->at(i).at(k) == 1) {
+            if (board->at(k).at(i) == 1) {
                 p1Counter++;
                 p2Counter = 0;
             }
-            else if (board->at(i).at(k) == 2) {
+            else if (board->at(k).at(i) == 2) {
                 p2Counter++;
                 p1Counter = 0;
             }
@@ -327,16 +329,21 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
         }
     }
 
-    //Horizontal -> Right
+    int max_v = ROW_HEIGHT - 4;
+    int max_h = ROW_WIDTH - 4;
 
-    int max_y = ROW_HEIGHT - 4;
-    int max_x = ROW_WIDTH - 4;
-    int h{};
+    int v{}; // Vertical
+    int h{}; // Horizontal
+    int z{}; // Start position offset
 
-    for (int z{}; z <= max_y; z++) {
-        for (int v{}; v < ROW_HEIGHT - v; v++) {
-            h = v;
+    p1Counter = 0;
+    p2Counter = 0;
 
+    // Diagonal - Right 1
+    while (z <= max_v) {
+        v = z; // Change start position
+        while (v < ROW_HEIGHT) {
+            h = v - z;
             if (board->at(v).at(h) == 1) {
                 p1Counter++;
                 p2Counter = 0;
@@ -348,18 +355,92 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
             if (p1Counter == 4 || p2Counter == 4) {
                 return std::make_pair(true, board->at(v).at(h));
             }
+            v++;
         }
+        z++;
     }
 
-    
 
+    z = 1;
+    p1Counter = 0;
+    p2Counter = 0;
 
+    // Diagonal - Right 2
+    while (z <= max_h) {
+        h = z; // Change start position
+        while (h < ROW_WIDTH) {
+            v = h - z;
+            if (board->at(v).at(h) == 1) {
+                p1Counter++;
+                p2Counter = 0;
+            }
+            else if (board->at(v).at(h) == 2) {
+                p2Counter++;
+                p1Counter = 0;
+            }
+            if (p1Counter == 4 || p2Counter == 4) {
+                return std::make_pair(true, board->at(v).at(h));
+            }
+            h++;
+        }
+        z++;
+    }
 
-    //Horizontal <- Left
+    z = 0;
+    p1Counter = 0;
+    p2Counter = 0;
 
+    // Diagonal - Left 1
+    while (z <= max_v) {
+        v = z; // Change start position
+        h = 0;
+        while (v < 6) {
+            h = 6 - v + z;
+            if (board->at(v).at(h) == 1) {
+                p1Counter++;
+                p2Counter = 0;
+            }
+            else if (board->at(v).at(h) == 2) {
+                p2Counter++;
+                p1Counter = 0;
+            }
+            if (p1Counter == 4 || p2Counter == 4) {
+                return std::make_pair(true, board->at(v).at(h));
+            }
+            v++;
+        }
+        z++;
+    }
+
+    z = 0;
+    p1Counter = 0;
+    p2Counter = 0;
+
+    // Diagonal - Left 2
+    while (z < max_h) {
+        h = 5 - z; // Change start position
+        while (h >= 0) {
+            v = 5 - h - z;
+            if (board->at(v).at(h) == 1) {
+                p1Counter++;
+                p2Counter = 0;
+            }
+            else if (board->at(v).at(h) == 2) {
+                p2Counter++;
+                p1Counter = 0;
+            }
+            if (p1Counter == 4 || p2Counter == 4) {
+                return std::make_pair(true, board->at(v).at(h));
+            }
+            h--;
+        }
+        z++;
+    }
+    return std::make_pair(false, 0);
 }
 
 
 void saveGame()
 {
+    std::fstream file{};
 }

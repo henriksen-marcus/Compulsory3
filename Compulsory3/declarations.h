@@ -5,8 +5,8 @@
 #include <time.h>
 #include <windows.h>
 #include <conio.h>
-#include <tuple>
 #include <utility>
+#include <fstream>
 #include "termcolor.hpp"
 
 #include "Player.h"
@@ -33,7 +33,5 @@ void saveGame();
 #define pW termcolor::bright_white
 #define reset termcolor::reset
 
-
-// You can change the rows and column amount here
 #define ROW_HEIGHT 6
 #define ROW_WIDTH 7
