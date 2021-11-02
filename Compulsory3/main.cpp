@@ -207,9 +207,12 @@ void connect4(bool* aiMode, Player* p1, Player* p2)
 {
     std::vector <std::vector <int>> board{};
     std::pair <bool, int> returnResult (false, 0);
-    //bool gameWon = returnResult.first;
     Player* currentPlayer = p1;
     
+
+    std::cout << p1->marker << std::endl;
+    std::cout << p2->marker << std::endl;
+    system("pause");
 
     // Init board
     for (int i{}; i < ROW_HEIGHT; i++) { 
@@ -225,8 +228,7 @@ void connect4(bool* aiMode, Player* p1, Player* p2)
     while (true) {
         printBoard(&board, aiMode, currentPlayer, p1, p2);
         checkInput(&board, currentPlayer, p1, p2);
-        
-        //returnResult = checkWin(&board);
+        returnResult = checkWin(&board);
 
         if (returnResult.first) { // If game is won
             if (returnResult.second == 1) {
@@ -329,23 +331,23 @@ void insertMarker(std::vector<std::vector<int>>* board, Player* currentPlayer, P
     for (int i = ROW_HEIGHT - 1; i >= 0; i--) {
         if (board->at(i).at(currentPlayer->pos) == 0) {
             board->at(i).at(currentPlayer->pos) = currentPlayer->marker;
-
-            //Switch players
-            if (currentPlayer == p1) { // Switch players
-                currentPlayer = p2;
-            }
-            else {
-                currentPlayer = p1;
-            }
+            swapPlayers(p1, p2); // Switch players
             return;
         }
     }
     std::cout << "No available spaces!" << std::endl;
-    Sleep(800);
+    Sleep(600);
 }
 
 
-std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board) 
+void swapPlayers(Player* a, Player* b) {
+    Player temp = *b;
+    *b = *a;
+    *a = temp;
+}
+
+
+std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
 {
     int p1Counter{}, p2Counter{};
 
@@ -499,5 +501,11 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
 
 void saveGame()
 {
+    std::fstream file{};
+    if (file.is_open()) {
+        file.close();
+    }
+    file.open("scores.txt", std::ios::app);
 
+    file.close();
 }

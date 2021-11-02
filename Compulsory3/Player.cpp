@@ -11,7 +11,7 @@ Player::Player() // Constructor
 
 Player::~Player() // Deconstructor
 {
-	std::cout << this << "was decontructed.";
+	std::cout << name << "was decontructed." << std::endl;
 }
 
 void Player::printSelf() 
