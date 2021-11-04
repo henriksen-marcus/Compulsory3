@@ -7,6 +7,7 @@ Player::Player() // Constructor
 	pos = 0;
 	color = 0;
 	name = "";
+	score = 0;
 }
 
 Player::~Player() // Deconstructor

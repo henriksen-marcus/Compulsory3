@@ -8,21 +8,21 @@
 #include <utility>
 #include <fstream>
 #include "termcolor.hpp"
-
+#include <sstream>
 #include "Player.h"
 
 
 void mainMenu();
 void middleMenu(Player*, Player*);
 void createPlayers(Player*, Player*);
-void connect4(bool*, Player*, Player*);
-void printBoard(std::vector<std::vector<int>>*, bool*, Player*, Player*, Player*);
-void checkInput(std::vector<std::vector<int>>*, Player*, Player*, Player*);
-void insertMarker(std::vector<std::vector<int>>*, Player*, Player*, Player*);
-void swapPlayers(Player*, Player*);
+void connect4(bool*, Player*&, Player*&, Player*&);
+void printBoard(std::vector<std::vector<int>>*, bool*, Player*&, Player*&, Player*&);
+void checkInput(std::vector<std::vector<int>>*, Player*&, Player*&, Player*&);
+void insertMarker(std::vector<std::vector<int>>*, Player*&, Player*&, Player*&);
 std::pair <bool, int> checkWin(std::vector<std::vector<int>>*);
 
-void saveGame();
+void saveGame(std::vector<std::vector<int>>*, Player*&, Player*&);
+void loadGame();
 
 
 // Color defenitions, printRed, printGreen aso.
@@ -32,6 +32,7 @@ void saveGame();
 #define pC termcolor::bright_cyan
 #define pY termcolor::bright_yellow
 #define pW termcolor::bright_white
+#define pT termcolor::on_white
 #define reset termcolor::reset
 
 #define ROW_HEIGHT 6

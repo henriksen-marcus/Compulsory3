@@ -8,7 +8,7 @@ public:
 	~Player();
 
 	bool isCurrent;
-	int pos, color, marker;
+	int pos, color, marker, score;
 	std::string name;
 
 	void printSelf();
