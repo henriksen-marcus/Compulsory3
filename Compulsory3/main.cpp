@@ -5,8 +5,8 @@ std::string dir{};
 
 int main()
 {
-    //time_t currentTime;
-    //srand((unsigned)time(&currentTime)); // Seed the rand function with the current time
+    time_t currentTime;
+    srand((unsigned)time(&currentTime)); // Seed the rand function with the current time
     system("color F"); // White
     mainMenu();
 }
@@ -16,7 +16,6 @@ void mainMenu()
 {
     int pos = 1;
     bool aiMode = false;
-    bool* aiModePtr = &aiMode;
     Player* p1 = new Player();
     Player* p2 = new Player();
     Player* currentPlayer = p1;
@@ -59,13 +58,15 @@ void mainMenu()
             switch (pos) {
             case 1:
                 aiMode = false;
-                middleMenu(p1, p2);
-                connect4(aiModePtr, p1, p2, currentPlayer);
+                middleMenu(p1, p2, aiMode);
+                connect4(aiMode, p1, p2, currentPlayer);
                 break;
             case 2:
                 aiMode = true;
-                middleMenu(p1, p2);
-                connect4(aiModePtr, p1, p2, currentPlayer);
+                p2->color = 1;
+                p2->name = "AI";
+                middleMenu(p1, p2, aiMode);
+                connect4(aiMode, p1, p2, currentPlayer);
                 break;
             case 3:
                 loadGame();
@@ -79,7 +80,7 @@ void mainMenu()
 }
 
 
-void middleMenu(Player* p1, Player* p2) {
+void middleMenu(Player* p1, Player* p2, bool aiMode) {
     int pos = 1;
     while (true) {
         system("cls");
@@ -111,14 +112,21 @@ void middleMenu(Player* p1, Player* p2) {
         case 13:
             switch (pos) {
             case 1:
-                createPlayers(p1, p2);
+                createPlayers(p1, p2, aiMode);
                 return;
                 break;
             case 2:
                 p1->name = "Player 1";
-                p1->color = 1;
-                p2->name = "Player 2";
-                p2->color = 2;
+                if (!aiMode) {
+                    p1->color = 1;
+                    p2->name = "Player 2";
+                    p2->color = 2;
+                }
+                else {
+                    p1->color = 2;
+                    p2->name = "AI";
+                    p2->color = 1;
+                }
                 return;
                 break;
             }
@@ -127,7 +135,7 @@ void middleMenu(Player* p1, Player* p2) {
 }
 
 
-void createPlayers(Player* p1, Player* p2) {
+void createPlayers(Player* p1, Player* p2, bool aiMode) {
     int count{ 1 }, pos{ 1 };
     char ch{};
 
@@ -161,10 +169,10 @@ void createPlayers(Player* p1, Player* p2) {
 
         if (pos == 1) { std::cout << pR << " > "; }
         std::cout << "Red" << reset << std::endl;
-        if (pos == 2) { std::cout << pG << " > "; }
-        std::cout << "Green" << reset << std::endl;
-        if (pos == 3) { std::cout << pB << " > "; }
+        if (pos == 2) { std::cout << pB << " > "; }
         std::cout << "Blue" << reset << std::endl;
+        if (pos == 3) { std::cout << pG << " > "; }
+        std::cout << "Green" << reset << std::endl;
         if (pos == 4) { std::cout << pY << " > "; }
         std::cout << "Yellow" << reset << std::endl;
 
@@ -188,8 +196,21 @@ void createPlayers(Player* p1, Player* p2) {
             break;
         case 13:
             if (count == 1) {
+                if (aiMode) { 
+                    if (pos == p2->color) {
+                        std::cout << std::endl;
+                        std::cout << p2->name << " has already chosen this color!" << std::endl;
+                        system("pause");
+                        break;
+                    }
+                    else {
+                        p1->color = pos;
+                        return;
+                    }
+                }
                 p1->color = pos;
                 pos = 1;
+                
                 count++;
             }
             else if (count == 2) {
@@ -212,12 +233,10 @@ void createPlayers(Player* p1, Player* p2) {
 }
 
 
-void connect4(bool* aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
+void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
 {
     std::vector <std::vector <int>> board{};
     std::pair <bool, int> returnResult (false, 0);
-    //Player* currentPlayer = p1;
-   
 
     // Init board
     for (int i{}; i < ROW_HEIGHT; i++) { 
@@ -228,11 +247,19 @@ void connect4(bool* aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
         board.push_back(temp);
     }
 
-
     // Game loop
     while (true) {
         printBoard(&board, aiMode, currentPlayer, p1, p2);
-        checkInput(&board, currentPlayer, p1, p2);
+
+        if (currentPlayer == p1) {
+            checkInput(&board, currentPlayer, p1, p2);
+            
+        }
+        else {
+            aiMove(&board, currentPlayer, p1, p2);
+        }
+
+        
         returnResult = checkWin(&board);
 
         if (returnResult.first) { // If game is won
@@ -245,20 +272,58 @@ void connect4(bool* aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
             }
             system("pause");
             break;
-        }
-        
-        
+        }  
     }
+    saveGamePrompt(&board, p1, p2);
+}
 
-    std::cout << "Do you want to save the game? (y/n): ";
-    char ch = _getch();
-    if (ch == 'y') {
-        saveGame(&board, p1, p2);
+
+void saveGamePrompt(std::vector<std::vector<int>>* board, Player* p1, Player* p2) {
+    
+    int pos{ 1 };
+
+    while (true) {
+        std::cout << "Do you want to save the game?: " << std::endl << std::endl;
+
+        if (pos == 1) { std::cout << pC << " > "; }
+        std::cout << "Yes" << reset << std::endl;
+        if (pos == 2) { std::cout << pC << " > "; }
+        std::cout << "No" << reset << std::endl;
+        std::cout << std::endl;
+
+        char ch = _getch();
+        switch (ch) {
+        case 'W':
+        case 'w':
+            if (pos == 1) {
+                pos = 2;
+                break;
+            }
+            pos--;
+            break;
+        case 'S':
+        case 's':
+            if (pos == 2) {
+                pos = 1;
+                break;
+            }
+            pos++;
+            break;
+        case 13:
+            if (pos == 1) {
+                saveGame(board, p1, p2);
+                std::cout << std::endl;
+                std::cout << "Saving game..." << std::endl;
+                Sleep(300);
+            }
+            return;
+            break;
+        }
     }
 }
 
 
-void printBoard(std::vector<std::vector<int>>* board, bool* aiMode, Player* &currentPlayer, Player* &p1, Player* &p2) 
+void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentPlayer, Player* &p1, Player* &p2) 
 {
     system("cls");
     /*if (aiMode) { std::cout << "Player versus AI." << std::endl; }
@@ -269,13 +334,19 @@ void printBoard(std::vector<std::vector<int>>* board, bool* aiMode, Player* &cur
     std::cout << "Move: " << pC << "   [A - D]" << std::endl;
     std::cout << pW << "Confirm: " << pC << "[ENTER]" << reset << std::endl << std::endl;
 
-  /*  if (aiMode) {
-        if (currentPlayer == 1) { std::cout << "Your turn!" << std::endl; }
-        else { std::cout << "AI's turn!" << std::endl; }
-    }*/
+    if (aiMode) {
+        if (currentPlayer == p1) {
+            std::cout << "Your turn!" << std::endl << std::endl;
+        }
+        else {
+            std::cout << "AI's turn!" << std::endl << std::endl;
+        }
+    }
+    else {
+        std::cout << currentPlayer->name << "'s turn!" << std::endl << std::endl;
+    }
  
     
-    std::cout << currentPlayer->name << "'s turn!" << std::endl << std::endl;
 
     std::vector <std::vector<int>> arr{};
     std::vector <int> temp{};
@@ -643,11 +714,6 @@ void saveGame(std::vector<std::vector<int>>* board, Player*& p1, Player*& p2)
 }
 
 
-
-
-/////////////////////////////////////////////////////////////////////////
-
-
 void loadGame() {
     std::fstream file("scores.txt");
     std::string line{};
@@ -728,10 +794,10 @@ void loadGame() {
             std::cout << pR <<saveGames[i].p1Name << reset;
             break;
         case 2:
-            std::cout << pG << saveGames[i].p1Name << reset;
+            std::cout << pB << saveGames[i].p1Name << reset;
             break;
         case 3:
-            std::cout << pB << saveGames[i].p1Name << reset;
+            std::cout << pG << saveGames[i].p1Name << reset;
             break;
         case 4:
             std::cout << pY << saveGames[i].p1Name << reset;
@@ -745,10 +811,10 @@ void loadGame() {
             std::cout << pR << saveGames[i].p2Name << reset << std::endl;
             break;
         case 2:
-            std::cout << pG << saveGames[i].p2Name << reset << std::endl;
+            std::cout << pB << saveGames[i].p2Name << reset << std::endl;
             break;
         case 3:
-            std::cout << pB << saveGames[i].p2Name << reset << std::endl;
+            std::cout << pG << saveGames[i].p2Name << reset << std::endl;
             break;
         case 4:
             std::cout << pY << saveGames[i].p2Name << reset << std::endl;
@@ -805,4 +871,324 @@ void loadGame() {
         std::cout << std::endl << std::endl << std::endl;
     }
     system("pause");
+}
+
+
+void aiMove(std::vector<std::vector<int>>* board, Player* &currentPlayer, Player* &p1, Player* &p2) {
+    std::vector<int> blockpos = getAiInfo(board);
+    if (blockpos.size() != 0) {
+        p2->pos = blockpos[0];
+    }
+    else {
+        p2->pos = rand() % 6 + 1;
+    }
+    std::cout << p2->pos << std::endl;
+    system("pause");
+    insertMarker(board, currentPlayer, p1, p2);
+}
+
+std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
+    int p1Counter{}, p2Counter{};
+
+    std::vector<std::tuple<int, int, std::string>> pWinPos3{};
+    std::vector<std::tuple<int, int, std::string>> pWinPos2{};
+    std::vector<std::tuple<int, int, std::string>> aWinPos3{};
+    std::vector<std::tuple<int, int, std::string>> aWinPos2{};
+
+    std::vector<std::tuple<int, int, std::string>> pWinPosCurrent{};
+    std::vector<std::tuple<int, int, std::string>> aWinPosCurrent{};
+
+
+    for (int checkLen = 3; checkLen >= 2; checkLen--) {
+       
+        pWinPosCurrent.clear();
+        aWinPosCurrent.clear();
+
+        for (int i{}; i < ROW_HEIGHT; i++) {
+            p1Counter = 0;
+            p2Counter = 0;
+            for (int k{}; k < ROW_WIDTH; k++) {
+                if (board->at(i).at(k) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(i).at(k) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(i, k, "hor"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(i, k, "hor"));
+                }
+            }
+        }
+
+        p1Counter = 0;
+        p2Counter = 0;
+
+        // Vertical
+        for (int i{}; i < ROW_WIDTH; i++) {
+            p1Counter = 0;
+            p2Counter = 0;
+            for (int k{}; k < ROW_HEIGHT; k++) {
+                if (board->at(k).at(i) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(k).at(i) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(i, k, "ver"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(i, k, "ver"));
+                }
+            }
+        }
+
+        int max_v = ROW_HEIGHT - 4;
+        int max_h = ROW_WIDTH - 4;
+
+        int v{}; // Vertical
+        int h{}; // Horizontal
+        int z{}; // Start position offset
+
+        p1Counter = 0;
+        p2Counter = 0;
+
+        // Diagonal - Right 1
+        while (z <= max_v) {
+            v = z; // Change start position
+            p1Counter = 0;
+            p2Counter = 0;
+            while (v < ROW_HEIGHT) {
+                h = v - z;
+                if (board->at(v).at(h) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(v).at(h) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(v, h, "dr"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(v, h, "dr"));
+                }
+                v++;
+            }
+            z++;
+        }
+
+
+        z = 1;
+        p1Counter = 0;
+        p2Counter = 0;
+
+        // Diagonal - Right 2
+        while (z <= max_h) {
+            h = z; // Change start position
+            p1Counter = 0;
+            p2Counter = 0;
+            while (h < ROW_WIDTH) {
+                v = h - z;
+                if (board->at(v).at(h) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(v).at(h) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(v, h, "dr"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(v, h, "dr"));
+                }
+                h++;
+            }
+            z++;
+        }
+
+        z = 0;
+        p1Counter = 0;
+        p2Counter = 0;
+
+        // Diagonal - Left 1
+        while (z <= max_v) {
+            v = z; // Change start position
+            p1Counter = 0;
+            p2Counter = 0;
+            while (v < 6) {
+                h = 6 - v + z;
+                if (board->at(v).at(h) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(v).at(h) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(v, h, "dl"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(v, h, "dl"));
+                }
+                v++;
+            }
+            z++;
+        }
+
+        z = 0;
+        p1Counter = 0;
+        p2Counter = 0;
+
+        // Diagonal - Left 2
+        while (z < max_h) {
+            h = 5 - z; // Change start position
+            p1Counter = 0;
+            p2Counter = 0;
+            while (h >= 0) {
+                v = 5 - h - z;
+                if (board->at(v).at(h) == 1) {
+                    p1Counter++;
+                    p2Counter = 0;
+                }
+                else if (board->at(v).at(h) == 2) {
+                    p2Counter++;
+                    p1Counter = 0;
+                }
+                else {
+                    p1Counter = 0;
+                    p2Counter = 0;
+                }
+                if (p1Counter == checkLen) {
+                    pWinPosCurrent.push_back(std::make_tuple(v, h, "dl"));
+                }
+                if (p2Counter == checkLen) {
+                    aWinPosCurrent.push_back(std::make_tuple(v, h, "dl"));
+                }
+                h--;
+            }
+            z++;
+        }
+
+        // Insert info
+        if (checkLen == 3) {
+            pWinPos3 = pWinPosCurrent;
+            aWinPos3 = aWinPosCurrent;
+        }
+        else {
+            pWinPos2 = pWinPosCurrent;
+            aWinPos2 = aWinPosCurrent;
+        }
+    }
+
+    /* I suddenly came to a realization that this game has gravity, so all the AI really needs to know 
+    is which column to drop the marker lol... Refactoring/Simplification masterrace */
+    std::vector<int> blockPositions3{};
+    std::vector<int> blockPositions2{};
+
+    //Find AI block positions
+    for (int i{}; i < pWinPos3.size(); i++) { // Notice how I am only pushing back the horizontal position
+
+        std::string dir = std::get<2>(pWinPos3[i]);
+        int x = std::get<1>(pWinPos3[i]);
+        int y = std::get<0>(pWinPos3[i]);
+        
+
+        if (dir == "hor") { // Horizontal
+            // Check if spot in front to winpos is open
+            if (x + 1 < 7) { // Check if spot exists
+                /* std::get<1>(pWinPos3[i]) returns the horizontal position in the board vector, here I check if that value + 1 is outside the board,
+                which will determine if the AI is allowed to place a marker there. Only checking horizontal because the check direction was horizontal. 
+                Vertical remanins zero. */
+                if (board->at(y).at(x + 1) == 0) { // Check if spot is available
+                    if (y == 0 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
+                        blockPositions3.push_back(x + 1);
+                    }
+                } 
+            }
+            // Check if spot behind winpos is open
+            if (x - 3 >= 0) { // Check if spot exists
+                if (board->at(y).at(x - 3) == 0) { // Check if spot is available
+                    if (board->at(x - 3).at(y + 1) != 0) { // Check if the marker will be supported
+                        blockPositions3.push_back(x - 3);
+                    }
+                }
+                
+            }
+        }
+        else if (dir == "ver") { // Vertical
+            // Don't need to check in front here, because of gravity ensures there will always be a marker under
+            if (y - 3 >= 0) { // Check behind
+                if (board->at(y - 3).at(x) == 0) {
+                    blockPositions3.push_back(x);
+                }
+            }
+        }
+        else if (dir == "dr") { // Diagonal right
+            if (x + 1 < 7 && y + 1 < 6) {
+                if (board->at(y + 1).at(x + 1) == 0) {
+                    if (y + 1 == 5 || board->at(y + 2).at(x + 1) != 0) {
+                        blockPositions3.push_back(x + 1);
+                    }
+                }
+            }
+            if (x - 3 >= 0 && y - 3 >= 0) {
+                if (board->at(y - 3).at(x - 3) == 0) {
+                    if (board->at(y - 2).at(x - 3) != 0) {
+                        blockPositions3.push_back(x - 3);
+                    }
+                }
+            }
+        }
+        else if ( dir == "dl") { // Diagonal left
+            if (x - 1 >= 0 && y + 1 < 6) {
+                if (board->at(y + 1).at(x - 1) == 0) {
+                    if (board->at(y + 2).at(x - 1) != 0) {
+                        blockPositions3.push_back(x - 1);
+                    }
+                }
+            }
+            if (x + 3 < 7 && y - 3 >= 0) {
+                if (board->at(y - 3).at(x + 3) == 0) {
+                    if (board->at(y - 2).at(x + 3) != 0) {
+                        blockPositions3.push_back(x + 3);
+                    }
+                }
+            }
+        }
+    }
+
+    return blockPositions3;
+
 }
