@@ -272,19 +272,26 @@ void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
             }
             system("pause");
             break;
-        }  
+        }
+
+        if (checkForFullBoard(&board)) {
+            std::cout << "Draw!" << std::endl;
+            system("pause");
+            break;
+        }
     }
-    saveGamePrompt(&board, p1, p2);
+    saveGamePrompt(&board, currentPlayer, p1, p2, aiMode);
 }
 
 
-void saveGamePrompt(std::vector<std::vector<int>>* board, Player* p1, Player* p2) {
+void saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer, Player* p1, Player* p2, bool aiMode) {
     
     int pos{ 1 };
-
+    
     while (true) {
+        system("cls");
+        printBoard(board, aiMode, currentPlayer, p1, p2);
         std::cout << "Do you want to save the game?: " << std::endl << std::endl;
-
         if (pos == 1) { std::cout << pC << " > "; }
         std::cout << "Yes" << reset << std::endl;
         if (pos == 2) { std::cout << pC << " > "; }
@@ -683,6 +690,20 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
 }
 
 
+bool checkForFullBoard(std::vector<std::vector<int>>* board)
+{
+    // Effecient check 
+    for (int i{}; i < ROW_HEIGHT; i++) {
+        for (int k{}; k < ROW_WIDTH; k++) {
+            if (board->at(i).at(k) == 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
 void saveGame(std::vector<std::vector<int>>* board, Player*& p1, Player*& p2)
 {
     std::fstream file("scores.txt");
@@ -875,19 +896,23 @@ void loadGame() {
 
 
 void aiMove(std::vector<std::vector<int>>* board, Player* &currentPlayer, Player* &p1, Player* &p2) {
-    std::vector<int> blockpos = getAiInfo(board);
-    if (blockpos.size() != 0) {
-        p2->pos = blockpos[0];
+    int blockPos = getAiInfo(board);
+    if (blockPos != -1) {
+        p2->pos = blockPos;
+        std::cout << p2->pos << std::endl;
+        Sleep(1000);
     }
     else {
         p2->pos = rand() % 6 + 1;
+        std::cout << "random" << std::endl;
+        Sleep(1000);
     }
-    std::cout << p2->pos << std::endl;
-    system("pause");
+    
     insertMarker(board, currentPlayer, p1, p2);
 }
 
-std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
+
+int getAiInfo(std::vector<std::vector<int>>* &board) {
     int p1Counter{}, p2Counter{};
 
     std::vector<std::tuple<int, int, std::string>> pWinPos3{};
@@ -950,10 +975,10 @@ std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
                     p2Counter = 0;
                 }
                 if (p1Counter == checkLen) {
-                    pWinPosCurrent.push_back(std::make_tuple(i, k, "ver"));
+                    pWinPosCurrent.push_back(std::make_tuple(k, i, "ver"));
                 }
                 if (p2Counter == checkLen) {
-                    aWinPosCurrent.push_back(std::make_tuple(i, k, "ver"));
+                    aWinPosCurrent.push_back(std::make_tuple(k, i, "ver"));
                 }
             }
         }
@@ -1114,10 +1139,212 @@ std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
 
     /* I suddenly came to a realization that this game has gravity, so all the AI really needs to know 
     is which column to drop the marker lol... Refactoring/Simplification masterrace */
-    std::vector<int> blockPositions3{};
-    std::vector<int> blockPositions2{};
+    std::vector<std::pair<int, int>> winPositions3{};
+    std::vector<std::pair<int, int>> winPositions2{};
+    std::vector<std::pair<int, int>> blockPositions3{};
+    std::vector<std::pair<int, int>> blockPositions2{};
 
-    //Find AI block positions
+    /* Priority system, AI will check for all cases and rank them according to how urgent they are.
+    * Priorities:
+       AI has 3 in a row:                   4
+       Player has 3 in a row:               3
+       Player has 2 in a row in the open:   2
+       AI has 2 in a row in the open:       1
+       Player has 2 in a row:               0
+    */
+
+
+
+    //Find AI win positions for 3 in a row
+    for (int i{}; i < aWinPos3.size(); i++) { // Notice how I am only pushing back the horizontal position
+
+        std::string dir = std::get<2>(aWinPos3[i]);
+        int x = std::get<1>(aWinPos3[i]);
+        int y = std::get<0>(aWinPos3[i]);
+
+
+        if (dir == "hor") { // Horizontal
+            // Check if spot in front to winpos is open
+            if (x + 1 < 7) { // Check if spot exists
+                /* std::get<1>(pWinPos3[i]) returns the horizontal position in the board vector, here I check if that value + 1 is outside the board,
+                which will determine if the AI is allowed to place a marker there. Only checking horizontal because the check direction was horizontal.
+                Vertical remanins zero. */
+                if (board->at(y).at(x + 1) == 0) { // Check if spot is available
+                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
+                        winPositions3.push_back({ x + 1, 3 });
+                    }
+                }
+            }
+            // Check if spot behind winpos is open
+            if (x - 3 >= 0) { // Check if spot exists
+                if (board->at(y).at(x - 3) == 0) { // Check if spot is available
+                    if (y == 5 || board->at(y + 1).at(x - 3) != 0) { // Check if the marker will be supported
+                        winPositions3.push_back(std::make_pair(x - 3, 3));
+                    }
+                }
+            }
+        }
+        else if (dir == "ver") { // Vertical
+            // Don't need to check in front here, because of gravity ensures there will always be a marker under
+            if (y - 3 >= 0) { // Check behind
+                if (board->at(y - 3).at(x) == 0) {
+                    winPositions3.push_back(std::make_pair(x, 3));
+                }
+            }
+        }
+        else if (dir == "dr") { // Diagonal right
+            if (x + 1 < 7 && y + 1 < 6) {
+                if (board->at(y + 1).at(x + 1) == 0) {
+                    if (y + 1 == 5 || board->at(y + 2).at(x + 1) != 0) {
+                        winPositions3.push_back(std::make_pair(x + 1, 3));
+                    }
+                }
+            }
+            if (x - 3 >= 0 && y - 3 >= 0) {
+                if (board->at(y - 3).at(x - 3) == 0) {
+                    if (board->at(y - 2).at(x - 3) != 0) {
+                        winPositions3.push_back(std::make_pair(x - 3, 3));
+                    }
+                }
+            }
+        }
+        else if (dir == "dl") { // Diagonal left
+            if (x - 1 >= 0 && y + 1 < 6) {
+                if (board->at(y + 1).at(x - 1) == 0) {
+                    if (board->at(y + 2).at(x - 1) != 0) {
+                        winPositions3.push_back(std::make_pair(x - 1, 3));
+                    }
+                }
+            }
+            if (x + 3 < 7 && y - 3 >= 0) {
+                if (board->at(y - 3).at(x + 3) == 0) {
+                    if (board->at(y - 2).at(x + 3) != 0) {
+                        winPositions3.push_back(std::make_pair(x + 3, 3));
+                    }
+                }
+            }
+        }
+    }
+
+
+    //Find AI win positions for 2 in a row
+    for (int i{}; i < aWinPos2.size(); i++) {
+
+        std::string dir = std::get<2>(aWinPos2[i]);
+        int x = std::get<1>(aWinPos2[i]);
+        int y = std::get<0>(aWinPos2[i]);
+        bool front = false;
+        bool back = false;
+
+
+        if (dir == "hor") { // Horizontal
+            if (x + 1 < 7) {
+                if (board->at(y).at(x + 1) == 0) {
+                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) {
+                        front = true;
+                    }
+                }
+            }
+            if (x - 3 >= 0) {
+                if (board->at(y).at(x - 2) == 0) {
+                    if (y == 5 || board->at(y + 1).at(x - 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    winPositions2.push_back(std::make_pair(x + 1, 1));
+                    winPositions2.push_back(std::make_pair(x - 2, 1));
+                }
+                else if (front) {
+                    winPositions2.push_back(std::make_pair(x + 1, 0));
+                }
+                else if (back) {
+                    winPositions2.push_back(std::make_pair(x - 2, 0));
+                }
+            }
+        }
+        else if (dir == "ver") { // Vertical
+            // Don't need to check in front here, because of gravity ensures there will always be a marker under
+            if (y - 3 >= 0) { // Check behind
+                if (board->at(y - 2).at(x) == 0) {
+                    winPositions2.push_back(std::make_pair(x, 0));
+                }
+            }
+        }
+        else if (dir == "dr") { // Diagonal right
+            if (x + 2 < 7 && y + 2 < 6) {
+                if (board->at(y + 1).at(x + 1) == 0) {
+                    if (y < 4) {
+                        if (board->at(y + 2).at(x + 1) != 0) {
+                            front = true;
+                        }
+                    } else if (y == 5) {
+                        front = true;
+                    }
+                }
+            }
+            if (x - 2 >= 0 && y - 2 >= 0) {
+                if (board->at(y - 2).at(x - 2) == 0) {
+                    if (board->at(y - 1).at(x - 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    winPositions2.push_back(std::make_pair(x + 1, 1));
+                    winPositions2.push_back(std::make_pair(x - 2, 1));
+                }
+                else if (front) {
+                    winPositions2.push_back(std::make_pair(x + 1, 0));
+                }
+                else if (back) {
+                    winPositions2.push_back(std::make_pair(x - 2, 0));
+                }
+            }
+        }
+        else if (dir == "dl") { // Diagonal left
+            if (x - 1 >= 0 && y + 1 < 6) {
+                if (board->at(y + 1).at(x - 1) == 0) {
+                    if (y < 4) {
+                        if (board->at(y + 2).at(x - 1) != 0) {
+                            front = true;
+                        }
+                    }
+                    else if (y == 5) {
+                        front = true;
+                    }
+                    
+                }
+            }
+            if (x + 2 < 7 && y - 2 >= 0) {
+                if (board->at(y - 2).at(x + 2) == 0) {
+                    if (board->at(y - 1).at(x + 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    winPositions2.push_back(std::make_pair(x - 1, 1));
+                    winPositions2.push_back(std::make_pair(x - 1, 1));
+                }
+                else if (front) {
+                    winPositions2.push_back(std::make_pair(x - 1, 0));
+                }
+                else if (back) {
+                    winPositions2.push_back(std::make_pair(x + 2, 0));
+                }
+            }
+        }
+    }
+
+    //---------------------------------------------------------------------//
+
+
+    //Find player block positions for 3 in a row
     for (int i{}; i < pWinPos3.size(); i++) { // Notice how I am only pushing back the horizontal position
 
         std::string dir = std::get<2>(pWinPos3[i]);
@@ -1132,26 +1359,25 @@ std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
                 which will determine if the AI is allowed to place a marker there. Only checking horizontal because the check direction was horizontal. 
                 Vertical remanins zero. */
                 if (board->at(y).at(x + 1) == 0) { // Check if spot is available
-                    if (y == 0 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
-                        blockPositions3.push_back(x + 1);
+                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
+                        blockPositions3.push_back(std::make_pair(x + 1, 3));
                     }
                 } 
             }
             // Check if spot behind winpos is open
             if (x - 3 >= 0) { // Check if spot exists
                 if (board->at(y).at(x - 3) == 0) { // Check if spot is available
-                    if (board->at(x - 3).at(y + 1) != 0) { // Check if the marker will be supported
-                        blockPositions3.push_back(x - 3);
+                    if (y == 5 || board->at(y + 1).at(x - 3) != 0) { // Check if the marker will be supported
+                        blockPositions3.push_back(std::make_pair(x - 3, 3));
                     }
                 }
-                
             }
         }
         else if (dir == "ver") { // Vertical
             // Don't need to check in front here, because of gravity ensures there will always be a marker under
             if (y - 3 >= 0) { // Check behind
                 if (board->at(y - 3).at(x) == 0) {
-                    blockPositions3.push_back(x);
+                    blockPositions3.push_back(std::make_pair(x, 3));
                 }
             }
         }
@@ -1159,14 +1385,14 @@ std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
             if (x + 1 < 7 && y + 1 < 6) {
                 if (board->at(y + 1).at(x + 1) == 0) {
                     if (y + 1 == 5 || board->at(y + 2).at(x + 1) != 0) {
-                        blockPositions3.push_back(x + 1);
+                        blockPositions3.push_back(std::make_pair(x + 1, 3));
                     }
                 }
             }
             if (x - 3 >= 0 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x - 3) == 0) {
                     if (board->at(y - 2).at(x - 3) != 0) {
-                        blockPositions3.push_back(x - 3);
+                        blockPositions3.push_back(std::make_pair(x - 3, 3));
                     }
                 }
             }
@@ -1175,20 +1401,199 @@ std::vector<int> getAiInfo(std::vector<std::vector<int>>* board) {
             if (x - 1 >= 0 && y + 1 < 6) {
                 if (board->at(y + 1).at(x - 1) == 0) {
                     if (board->at(y + 2).at(x - 1) != 0) {
-                        blockPositions3.push_back(x - 1);
+                        blockPositions3.push_back(std::make_pair(x - 1, 3));
                     }
                 }
             }
             if (x + 3 < 7 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x + 3) == 0) {
                     if (board->at(y - 2).at(x + 3) != 0) {
-                        blockPositions3.push_back(x + 3);
+                        blockPositions3.push_back(std::make_pair(x + 3, 3));
                     }
                 }
             }
         }
     }
 
-    return blockPositions3;
+    
+    //Find player block positions for 2 in a row
+    for (int i{}; i < pWinPos2.size(); i++) {
+
+        std::string dir = std::get<2>(pWinPos2[i]);
+        int x = std::get<1>(pWinPos2[i]);
+        int y = std::get<0>(pWinPos2[i]);
+        bool front = false;
+        bool back = false;
+
+
+        if (dir == "hor") { // Horizontal
+            if (x + 1 < 7) {
+                if (board->at(y).at(x + 1) == 0) {
+                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) {
+                        front = true;
+                    }
+                }
+            }
+            if (x - 3 >= 0) {
+                if (board->at(y).at(x - 2) == 0) {
+                    if (y == 5 || board->at(y + 1).at(x - 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    blockPositions2.push_back(std::make_pair(x + 1, 1));
+                    blockPositions2.push_back(std::make_pair(x - 2, 1));
+                }
+                else if (front) {
+                    blockPositions2.push_back(std::make_pair(x + 1, 0));
+                }
+                else if (back) {
+                    blockPositions2.push_back(std::make_pair(x - 2, 0));
+                }
+            }
+        }
+        else if (dir == "ver") { // Vertical
+            // Don't need to check in front here, because of gravity ensures there will always be a marker under
+            if (y - 3 >= 0) { // Check behind
+                if (board->at(y - 2).at(x) == 0) {
+                    blockPositions2.push_back(std::make_pair(x, 0));
+                }
+            }
+        }
+        else if (dir == "dr") { // Diagonal right
+            if (x + 1 < 7 && y + 1 < 6) {
+                if (board->at(y + 1).at(x + 1) == 0) {
+                    if (y < 4) {
+                        if (board->at(y + 2).at(x + 1) != 0) {
+                            front = true;
+                        }
+                    }
+                }
+            }
+            if (x - 2 >= 0 && y - 2 >= 0) {
+                if (board->at(y - 2).at(x - 2) == 0) {
+                    if (board->at(y - 1).at(x - 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    blockPositions2.push_back(std::make_pair(x + 1, 1));
+                    blockPositions2.push_back(std::make_pair(x - 2, 1));
+                }
+                else if (front) {
+                    blockPositions2.push_back(std::make_pair(x + 1, 0));
+                }
+                else if (back) {
+                    blockPositions2.push_back(std::make_pair(x - 2, 0));
+                }
+            }
+        }
+        else if (dir == "dl") { // Diagonal left
+            if (x - 1 >= 0 && y + 1 < 6) {
+                if (board->at(y + 1).at(x - 1) == 0) {
+                    if (board->at(y + 2).at(x - 1) != 0) {
+                        front = true;
+                    }
+                }
+            }
+            if (x + 2 < 7 && y - 2 >= 0) {
+                if (board->at(y - 2).at(x + 2) == 0) {
+                    if (board->at(y - 1).at(x + 2) != 0) {
+                        back = true;
+                    }
+                }
+            }
+            if (front || back) {
+                if (front && back) {
+                    blockPositions2.push_back(std::make_pair(x - 1, 1));
+                    blockPositions2.push_back(std::make_pair(x + 2, 1));
+                }
+                else if (front) {
+                    blockPositions2.push_back(std::make_pair(x - 1, 0));
+                }
+                else if (back) {
+                    blockPositions2.push_back(std::make_pair(x + 2, 0));
+                }
+            }
+        }
+    }
+
+
+    // Decide which x position to return based on priorities
+    if (winPositions3.size() > 0) {
+        return winPositions3[0].first;
+    }
+    else if (blockPositions3.size() > 0) {
+        if (blockPositions3.size() > 1) {
+            std::vector<std::pair<int, int>> compArr{};
+            for (int i{}; i < blockPositions3.size(); i++) {
+                if (i == 0) {
+                    compArr.push_back({ blockPositions3[i].first, 0 });
+                }
+                for (int k{}; k < compArr.size(); k++) {
+                    if (blockPositions3[i].first == compArr[k].first) {
+                        compArr[k].second += 1;
+                        break;
+                    }
+                    if (k == compArr.size() - 1) {
+                        compArr.push_back({ blockPositions3[i].first, 0 });
+                    }
+                }
+            }
+            std::pair<int, int> bestChoice(0, 0);
+            for (int i{}; i < compArr.size(); i++) {
+                if (compArr[i].second > bestChoice.second) {
+                    bestChoice = compArr[i];
+                }
+            }
+            if (bestChoice.second > 1) {
+                std::cout << "AI used double block!" << std::endl;
+                Sleep(2000);
+            }
+            return bestChoice.first;
+        }
+        else {
+            return blockPositions3[0].first;
+        }
+    }
+    else if (blockPositions2.size() > 0) { // With 2 open spaces
+        if (blockPositions2.size() > 1) {
+            std::vector<std::pair<int, int>> compArr{};
+            for (int i{}; i < blockPositions2.size(); i++) {
+                if (i == 0) {
+                    compArr.push_back({ blockPositions2[i].first, 0 });
+                }
+                for (int k{}; k < compArr.size(); k++) {
+                    if (blockPositions2[i].first == compArr[k].first) {
+                        compArr[k].second += 1;
+                        break;
+                    }
+                    if (k == compArr.size() - 1 && blockPositions2[i].second > 0) { // Only checking higher-than 0 priority
+                        compArr.push_back({ blockPositions2[i].first, 0 });
+                    }
+                }
+            }
+            std::pair<int, int> bestChoice(0, 0);
+            for (int i{}; i < compArr.size(); i++) {
+                if (compArr[i].second > bestChoice.second) {
+                    bestChoice = compArr[i];
+                }
+            }
+            if (bestChoice.second > 1) {
+                std::cout << "AI used double block!" << std::endl;
+                Sleep(2000);
+            }
+            return bestChoice.first;
+        }
+        else {
+            return blockPositions2[0].first;
+        }
+    }
+
+    return -1;
 
 }
