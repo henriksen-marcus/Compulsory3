@@ -6,11 +6,13 @@ public:
 	Player();
 	~Player();
 
-	bool isCurrent;
+	bool winner;
 	int pos, color, marker, score;
 	std::string name;
 
 	void printSelf();
+	void printSelf(bool);
+	void clear();
 
 };
 

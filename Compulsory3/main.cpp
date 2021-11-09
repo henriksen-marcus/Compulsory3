@@ -1,14 +1,12 @@
 ﻿#include "declarations.h"
 
-std::pair <int, int> winPos{};
-std::string dir{};
 
 int main()
 {
-    time_t currentTime;
-    srand((unsigned)time(&currentTime)); // Seed the rand function with the current time
+    srand((unsigned)time(NULL)); // Seed the rand function with the current time
     system("color F"); // White
-    mainMenu();
+    while (true) { mainMenu(); }
+    return 0;
 }
 
 
@@ -24,7 +22,7 @@ void mainMenu()
 
     while (true) {
         system("cls");
-        std::cout << "Main Menu - Connect-Four" << std::endl << std::endl;
+        std::cout << " === Main Menu - Connect-Four ===" << std::endl << std::endl;
         std::cout << "Select an option:" << reset << std::endl << std::endl;
         if (pos == 1) { std::cout << pC << " > "; }
         std::cout << "Player vs Player" << reset << std::endl;
@@ -84,7 +82,7 @@ void middleMenu(Player* p1, Player* p2, bool aiMode) {
     int pos = 1;
     while (true) {
         system("cls");
-        std::cout << "Creating Players" << std::endl << std::endl;
+        std::cout << " === Creating Players ===" << std::endl << std::endl;
         std::cout << "Select an option:" << reset << std::endl << std::endl;
         if (pos == 1) { std::cout << pC << " > "; }
         std::cout << "Set Names and Color" << reset << std::endl;
@@ -235,66 +233,79 @@ void createPlayers(Player* p1, Player* p2, bool aiMode) {
 
 void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
 {
-    std::vector <std::vector <int>> board{};
-    std::tuple <bool, int, int, int, std::string> returnResult (false, 0, 0, 0, "");
+    bool exit = false;
+    while (!exit) {
+        std::vector <std::vector <int>> board{};
+        std::tuple <bool, int, int, int, std::string> returnResult{};
+        currentPlayer = p1;
 
-    // Init board
-    for (int i{}; i < ROW_HEIGHT; i++) { 
-        std::vector <int> temp{};
-        for (int k{}; k < ROW_WIDTH; k++) {
-            temp.push_back(0);
-        }
-        board.push_back(temp);
-    }
-
-    // Game loop
-    while (true) {
-        printBoard(&board, aiMode, currentPlayer, p1, p2);
-
-        if (currentPlayer == p1) {
-            checkInput(&board, currentPlayer, p1, p2);
-        }
-        else {
-            aiMove(&board, currentPlayer, p1, p2);
+        // Init board
+        for (int i{}; i < ROW_HEIGHT; i++) {
+            std::vector <int> temp{};
+            for (int k{}; k < ROW_WIDTH; k++) {
+                temp.push_back(0);
+            }
+            board.push_back(temp);
         }
 
-        
-        returnResult = checkWin(&board);
-
-        if (std::get<0>(returnResult)) { // If game is won
+        // Game loop
+        while (true) {
             printBoard(&board, aiMode, currentPlayer, p1, p2);
-            if (std::get<1>(returnResult) == 1) {
-                std::cout << p1->name << " has won!" << std::endl;
+            if (aiMode) {
+                if (currentPlayer == p1) {
+                    checkInput(&board, currentPlayer, p1, p2);
+                }
+                else {
+                    aiMove(&board, aiMode, currentPlayer, p1, p2);
+                }
             }
-            else if (std::get<1>(returnResult) == 2) {
-                std::cout << p2->name << " has won!" << std::endl;
+            else {
+                checkInput(&board, currentPlayer, p1, p2);
             }
-            system("pause");
-            break;
-        }
 
-        if (checkForFullBoard(&board)) {
-            std::cout << "Draw!" << std::endl;
-            system("pause");
-            break;
+
+            returnResult = checkWin(&board);
+
+            if (std::get<0>(returnResult)) { // If game is won
+                boardUpdate(&board, returnResult);
+                printBoard(&board, aiMode, currentPlayer, p1, p2);
+                if (std::get<1>(returnResult) == 1) {
+                    std::cout << p1->name << " has won!" << std::endl;
+                    p1->winner = true;
+                }
+                else if (std::get<1>(returnResult) == 2) {
+                    std::cout << p2->name << " has won!" << std::endl;
+                    p2->winner = true;
+                }
+                system("pause");
+                break;
+            }
+
+            if (checkForFullBoard(&board)) {
+                std::cout << "Draw!" << std::endl;
+                system("pause");
+                break;
+            }
         }
+        exit = saveGamePrompt(&board, currentPlayer, p1, p2, aiMode);
     }
-    saveGamePrompt(&board, currentPlayer, p1, p2, aiMode);
 }
 
 
-void saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer, Player* p1, Player* p2, bool aiMode) {
+bool saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer, Player* p1, Player* p2, bool aiMode) {
     
     int pos{ 1 };
     
     while (true) {
         system("cls");
         printBoard(board, aiMode, currentPlayer, p1, p2);
-        std::cout << "Do you want to save the game?: " << std::endl << std::endl;
+        std::cout << "Choose an option: " << std::endl << std::endl;
         if (pos == 1) { std::cout << pC << " > "; }
-        std::cout << "Yes" << reset << std::endl;
+        std::cout << "Save & play again" << reset << std::endl;
         if (pos == 2) { std::cout << pC << " > "; }
-        std::cout << "No" << reset << std::endl;
+        std::cout << "Save & exit" << reset << std::endl;
+        if (pos == 3) { std::cout << pC << " > "; }
+        std::cout << "Exit" << reset << std::endl;
         std::cout << std::endl;
 
         char ch = _getch();
@@ -302,43 +313,103 @@ void saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer,
         case 'W':
         case 'w':
             if (pos == 1) {
-                pos = 2;
+                pos = 3;
                 break;
             }
             pos--;
             break;
         case 'S':
         case 's':
-            if (pos == 2) {
+            if (pos == 3) {
                 pos = 1;
                 break;
             }
             pos++;
             break;
         case 13:
-            if (pos == 1) {
+            switch (pos) {
+            case 1:
                 saveGame(board, p1, p2);
                 std::cout << std::endl;
                 std::cout << "Saving game..." << std::endl;
                 Sleep(300);
+                return false;
+                break;
+            case 2:
+                saveGame(board, p1, p2);
+                std::cout << std::endl;
+                std::cout << "Saving game..." << std::endl;
+                p1->clear();
+                p2->clear();
+                Sleep(300);
+                return true;
+                break;
+            case 3:
+                p1->clear();
+                p2->clear();
+                return true;
+                break;
             }
-            return;
-            break;
         }
     }
 }
 
 
-void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& currentPlayer, Player*& p1, Player*& p2, std::tuple<bool, int, int, int, std::string> winInfo)
+void boardUpdate(std::vector<std::vector<int>>* board, std::tuple<bool, int, int, int, std::string> winInfo) {
+    std::vector <std::vector <int>> arr{};
+
+    std::string dir = std::get<4>(winInfo);
+    int y = std::get<2>(winInfo);
+    int x = std::get<3>(winInfo);
+
+    arr.push_back({ y, x });
+
+    if (dir == "hor") {
+        arr.push_back({ y, x - 1 });
+        arr.push_back({ y, x - 2 });
+        arr.push_back({ y, x - 3 });
+    }
+    else if (dir == "ver") {
+        arr.push_back({ y - 1, x });
+        arr.push_back({ y - 2, x });
+        arr.push_back({ y - 3, x });
+    }
+    else if (dir == "dr") {
+        arr.push_back({ y - 1, x - 1 });
+        arr.push_back({ y - 2, x - 2 });
+        arr.push_back({ y - 3, x - 3 });
+    }
+    else if (dir == "dl") {
+        arr.push_back({ y - 1, x + 1 });
+        arr.push_back({ y - 2, x + 2 });
+        arr.push_back({ y - 3, x + 3 });
+    }
+
+    int winner{};
+    if (std::get<1>(winInfo) == 1) {
+        winner = 3;
+    }
+    else {
+        winner = 4;
+    }
+
+    board->at(arr[0][0]).at(arr[0][1]) = winner;
+    board->at(arr[1][0]).at(arr[1][1]) = winner;
+    board->at(arr[2][0]).at(arr[2][1]) = winner;
+    board->at(arr[3][0]).at(arr[3][1]) = winner;
+}
+
+
+void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& currentPlayer, Player*& p1, Player*& p2)
 {
     system("cls");
-    if (aiMode) { std::cout << "Player versus AI." << std::endl; }
-    else { std::cout << "Player versus player." << std::endl; }
+    if (aiMode) { std::cout << " === Player versus AI ===" << std::endl; }
+    else { std::cout << " === Player versus Player ===" << std::endl; }
 
     std::cout << std::endl;
 
-    std::cout << "Move: " << pC << "   [A - D]" << std::endl;
-    std::cout << pW << "Confirm: " << pC << "[ENTER]" << reset << std::endl << std::endl;
+    std::cout << "Move: " << pC << "   [A - D]" << reset << std::endl;
+    std::cout << "Confirm: " << pC << "[ENTER]" << reset << std::endl << std::endl;
 
     if (aiMode) {
         if (currentPlayer == p1) {
@@ -350,42 +421,6 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& curr
     }
     else {
         std::cout << currentPlayer->name << "'s turn!" << std::endl << std::endl;
-    }
- 
-    std::vector<std::vector<int>> arr{};
-    if (std::get<0>(winInfo)) {
-        if (std::get<4>(winInfo) == "hor") {
-            for (int i{}; i < 4; i++) {
-                std::vector<int> tempArr{};
-                tempArr.push_back(std::get<2>(winInfo)); // y
-                tempArr.push_back(std::get<3>(winInfo) - 1); // x
-                arr.push_back(tempArr);
-            }
-        }
-        else if (std::get<4>(winInfo) == "ver") {
-            for (int i{}; i < 4; i++) {
-                std::vector<int> tempArr{};
-                tempArr.push_back(std::get<2>(winInfo) - 1); // y
-                tempArr.push_back(std::get<3>(winInfo)); // x
-                arr.push_back(tempArr);
-            }
-        }
-        else if (std::get<4>(winInfo) == "dr") {
-            for (int i{}; i < 4; i++) {
-                std::vector<int> tempArr{};
-                tempArr.push_back(std::get<2>(winInfo) - 1); // y
-                tempArr.push_back(std::get<3>(winInfo) - 1); // x
-                arr.push_back(tempArr);
-            }
-        }
-        else if (std::get<4>(winInfo) == "dl") {
-            for (int i{}; i < 4; i++) {
-                std::vector<int> tempArr{};
-                tempArr.push_back(std::get<2>(winInfo) + 1); // y
-                tempArr.push_back(std::get<3>(winInfo) - 1); // x
-                arr.push_back(tempArr);
-            }
-        }
     }
 
 
@@ -406,26 +441,23 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& curr
         std::cout << "|";
         
         for (int x{}; x < ROW_WIDTH; x++) {
-            stop = false;
-            if (std::get<0>(winInfo)) {
-                for (int g{}; g < arr.size(); g++) {
-                    if (arr[g][0] == y && arr[g][1] == x) {
-                        std::cout << pR << termcolor::on_bright_cyan << " O " << reset;
-                        stop = true;
-                        break;
-                    }
-                }
-            }
-            if (stop) { continue; }
-            if (board->at(y).at(x) == 0) { 
-                std::cout << " X ";
-            }
-            else if (board->at(y).at(x) == 1) {
-                
+
+            switch (board->at(y).at(x)) {
+            case 0:
+                std::cout << " * ";
+                break;
+            case 1:
                 p1->printSelf();
-            }
-            else {
+                break;
+            case 2:
                 p2->printSelf();
+                break;
+            case 3:
+                p1->printSelf(true);
+                break;
+            case 4:
+                p2->printSelf(true);
+                break;
             }
         }
         std::cout << "|" << std::endl;
@@ -472,17 +504,18 @@ void checkInput(std::vector<std::vector<int>>* board, Player* &currentPlayer, Pl
 
 void insertMarker(std::vector<std::vector<int>>* board, Player*& currentPlayer, Player*& p1, Player*& p2)
 {
-    for (int i = ROW_HEIGHT - 1; i >= 0; i--) {
-        if (board->at(i).at(currentPlayer->pos) == 0) {
-            board->at(i).at(currentPlayer->pos) = currentPlayer->marker;
-            if (currentPlayer == p1) {
-                currentPlayer = p2;
-            }
-            else {
-                currentPlayer = p1;
-            }
-            return;
+    std::pair <bool, int> spot = checkAvailablility(board, currentPlayer->pos);
+    if (spot.first == true) {
+        board->at(spot.second).at(currentPlayer->pos) = currentPlayer->marker;
+        if (currentPlayer == p1) { // Switch players
+            currentPlayer = p2;
+            p2->pos = p1->pos;
         }
+        else {
+            currentPlayer = p1;
+            p1->pos = p2->pos;
+        }
+        return;
     }
     std::cout << "No available spaces!" << std::endl;
     Sleep(600);
@@ -666,9 +699,6 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = v;
-                winPos.second = h;
-                dir = "dl";
                 return std::make_tuple(true, board->at(v).at(h), v, h, "dl");
             }
             h--;
@@ -703,23 +733,31 @@ void saveGame(std::vector<std::vector<int>>* board, Player*& p1, Player*& p2)
 
     file << p1->name << "\n";
     file << p1->color << "\n";
-    file << p1->score << "\n";
 
     file << p2->name << "\n";
     file << p2->color << "\n";
-    file << p2->score << "\n";
+    
+    if (p1->winner) {
+        file << "1\n";
+    }
+    else if (p2->winner) {
+        file << "2\n";
+    }
+    else {
+        file << "0\n";
+    }
 
-    std::stringstream textBoard{};
+    file << time(NULL) << "\n";
 
+    std::stringstream numToText{};
+    
     for (int i{}; i < board->size(); i++) {
         for (int k{}; k < board->at(0).size(); k++) {
-            textBoard << board->at(i).at(k);
+            numToText << board->at(i).at(k);
         }
     }
 
-    file << textBoard.str() << "\n";
-
-
+    file << numToText.str() << "\n";
     file.close();
 }
 
@@ -733,10 +771,10 @@ void loadGame() {
     struct game {
         std::string p1Name;
         int p1Color{};
-        int p1Score{};
         std::string p2Name;
         int p2Color{};
-        int p2Score{};
+        int winner{};
+        long int time{};
         std::vector<std::vector<char>> board{};
     }temp;
     
@@ -754,15 +792,20 @@ void loadGame() {
     }
     file.clear();
 
+    if (fileLength == 0) {
+        std::cout << "No saved games." << std::endl;
+        system("pause");
+        return;
+    }
+
 
     for (int i{}; i < fileLength; i += 7) {
         temp.p1Name = fileInfo[i];
         temp.p1Color = std::stoi(fileInfo[i + 1]);
-        temp.p1Score = std::stoi(fileInfo[i + 2]);
-
-        temp.p2Name = fileInfo[i + 3];
-        temp.p2Color = std::stoi(fileInfo[i + 4]);
-        temp.p2Score = std::stoi(fileInfo[i + 5]);
+        temp.p2Name = fileInfo[i + 2];
+        temp.p2Color = std::stoi(fileInfo[i + 3]);
+        temp.winner = std::stoi(fileInfo[i + 4]);
+        temp.time = std::stoi(fileInfo[i + 5]);
 
         std::vector <char> tempArr{};
 
@@ -777,23 +820,10 @@ void loadGame() {
 
         saveGames.push_back(temp);
         temp = {};
-
-        /*for (int j{}; j < ROW_HEIGHT; j++) {
-            horizontalLines.push_back(fileInfo[i + 6].substr(i * 6, 7));
-        }
-
-
-        for (int k{}; k < ROW_HEIGHT; k++) {
-            std::vector <int> temp1{};
-            for (int l{}; l < 7; l++) {
-                temp1.push_back(horizontalLines[k][l]);
-            }
-            temp.board.push_back(temp1);
-        }*/
     }
 
-
-    std::cout << pT << termcolor::bright_blue << " Saved Games " << reset << reset << std::endl << std::endl;
+    system("cls");
+    std::cout << pC << "===== Saved Games: =====" << reset << reset << std::endl << std::endl;
 
     std::string row = " ---------------------";
 
@@ -838,61 +868,158 @@ void loadGame() {
         for (int j{}; j < ROW_HEIGHT; j++) {
             std::cout << "|";
             for (int k{}; k < ROW_WIDTH; k++) {
-                if (saveGames[i].board[j][k] == '0') {
-                    std::cout << " X ";
-                }
-                else if (saveGames[i].board[j][k] == '1') {
+                switch (saveGames[i].board[j][k]) {
+                case '0':
+                    std::cout << " * ";
+                    break;
+                case '1':
                     switch (saveGames[i].p1Color) {
                     case 1:
                         std::cout << pR << " O " << reset;
                         break;
                     case 2:
-                        std::cout << pG << " O " << reset;
+                        std::cout << pB << " O " << reset;
                         break;
                     case 3:
-                        std::cout << pB << " O " << reset;
+                        std::cout << pG << " O " << reset;
                         break;
                     case 4:
                         std::cout << pY << " O " << reset;
                         break;
                     }
-                }
-                else if (saveGames[i].board[j][k] == '2') {
+                    break;
+                case '2':
                     switch (saveGames[i].p2Color) {
                     case 1:
                         std::cout << pR << " O " << reset;
                         break;
                     case 2:
-                        std::cout << pG << " O " << reset;
+                        std::cout << pB << " O " << reset;
                         break;
                     case 3:
-                        std::cout << pB << " O " << reset;
+                        std::cout << pG << " O " << reset;
                         break;
                     case 4:
                         std::cout << pY << " O " << reset;
                         break;
                     }
+                    break;
+                case '3':
+                    switch (saveGames[i].p1Color) {
+                    case 1:
+                        std::cout << oW << pR << " O " << reset;
+                        break;
+                    case 2:
+                        std::cout << oW << pB << " O " << reset;
+                        break;
+                    case 3:
+                        std::cout << oW << pG << " O " << reset;
+                        break;
+                    case 4:
+                        std::cout << oW << pY << " O " << reset;
+                        break;
+                    }
+                    break;
+                case '4':
+                    switch (saveGames[i].p2Color) {
+                    case 1:
+                        std::cout << oW << pR << " O " << reset;
+                        break;
+                    case 2:
+                        std::cout << oW << pB << " O " << reset;
+                        break;
+                    case 3:
+                        std::cout << oW << pG << pB << " O " << reset;
+                        break;
+                    case 4:
+                        std::cout << oW << pY << " O " << reset;
+                        break;
+                    }
                 }
-                
             }
             std::cout << "|" << std::endl;
         }
         std::cout << row << std::endl;
-        std::cout << std::endl << std::endl << std::endl;
+        
+
+        if (saveGames[i].winner == 1) {
+            std::cout << saveGames[i].p1Name << " won the game!" << std::endl << std::endl;
+        }
+        else if (saveGames[i].winner == 2){
+            std::cout << saveGames[i].p2Name << " won the game!" << std::endl << std::endl;
+        }
+        else {
+            std::cout << "Draw!" << std::endl;
+        }
+
+        double converted = time(NULL) - saveGames[i].time;
+        int rounded{};
+        std::string text{};
+
+        if (converted > 86400) {
+            rounded = converted / 86400;
+            text = "day(s) ago";
+        }
+        else if (converted > 3600) {
+            rounded = converted / 3600;
+            text = "hour(s) ago";
+        }
+        else if (converted > 60) {
+            rounded = converted / 60;
+            text = "minute(s) ago";
+        }
+        else {
+            text = "Less than a minute ago";
+        }
+
+        if (rounded != 0) {
+            std::cout << rounded << " " << text << std::endl;
+        }
+        else {
+            std::cout << text << std::endl;
+        }
+
+        std::cout << std::endl << std::endl;
     }
     system("pause");
 }
 
 
-void aiMove(std::vector<std::vector<int>>* board, Player* &currentPlayer, Player* &p1, Player* &p2) {
+void aiMove(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentPlayer, Player* &p1, Player* &p2) {
+    std::cout << "Thinking..." << std::endl;
+    Sleep(800);
     int blockPos = getAiInfo(board);
+    int newPos{};
     if (blockPos != -1) {
-        p2->pos = blockPos;
+        newPos = blockPos;
     }
     else {
-        p2->pos = rand() % 6 + 1;
+        do
+        {
+            newPos = rand() % 6 + 1;
+        } while (!checkAvailablility(board, p2->pos).first);
+        
     }
-    
+
+    // Move arrow
+    int moveAmount{};
+    if (p2->pos < newPos) {
+        moveAmount = newPos - p2->pos;
+        for (int i{}; i < moveAmount; i++) {
+            p2->pos++;
+            printBoard(board, aiMode, currentPlayer, p1, p2);
+            Sleep(350);
+        }
+    }
+    else if (p2->pos > newPos) {
+        moveAmount = p2->pos - newPos;
+        for (int i{}; i < moveAmount; i++) {
+            p2->pos--;
+            printBoard(board, aiMode, currentPlayer, p1, p2);
+            Sleep(350);
+        }
+    }
+
     insertMarker(board, currentPlayer, p1, p2);
 }
 
@@ -1327,11 +1454,8 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
     }
 
 
-    //---------------------------------------------------------------------//
-
-
     //Find player block positions for 3 in a row
-    for (int i{}; i < pWinPos3.size(); i++) { // Notice how I am only pushing back the horizontal position
+    for (int i{}; i < pWinPos3.size(); i++) {
 
         std::string dir = std::get<2>(pWinPos3[i]);
         int x = std::get<1>(pWinPos3[i]);
@@ -1339,29 +1463,26 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         
 
         if (dir == "hor") { // Horizontal
-            // Check if spot in front to winpos is open
-            if (x + 1 < 7) { // Check if spot exists
+            if (x + 1 < 7) { 
                 /* std::get<1>(pWinPos3[i]) returns the horizontal position in the board vector, here I check if that value + 1 is outside the board,
                 which will determine if the AI is allowed to place a marker there. Only checking horizontal because the check direction was horizontal. 
                 Vertical remanins zero. */
-                if (board->at(y).at(x + 1) == 0) { // Check if spot is available
-                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
+                if (board->at(y).at(x + 1) == 0) { 
+                    if (y == 5 || board->at(y + 1).at(x + 1) != 0) { 
                         blockPositions3.push_back(std::make_pair(x + 1, 5));
                     }
                 } 
             }
-            // Check if spot behind winpos is open
-            if (x - 3 >= 0) { // Check if spot exists
-                if (board->at(y).at(x - 3) == 0) { // Check if spot is available
-                    if (y == 5 || board->at(y + 1).at(x - 3) != 0) { // Check if the marker will be supported
+            if (x - 3 >= 0) { 
+                if (board->at(y).at(x - 3) == 0) {
+                    if (y == 5 || board->at(y + 1).at(x - 3) != 0) { 
                         blockPositions3.push_back(std::make_pair(x - 3, 5));
                     }
                 }
             }
         }
         else if (dir == "ver") { // Vertical
-            // Don't need to check in front here, because of gravity ensures there will always be a marker under
-            if (y - 3 >= 0) { // Check behind
+            if (y - 3 >= 0) {
                 if (board->at(y - 3).at(x) == 0) {
                     blockPositions3.push_back(std::make_pair(x, 5));
                 }
@@ -1441,8 +1562,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
         }
         else if (dir == "ver") { // Vertical
-            // Don't need to check in front here, because of gravity ensures there will always be a marker under
-            if (y - 3 >= 0) { // Check behind
+            if (y - 3 >= 0) { 
                 if (board->at(y - 2).at(x) == 0) {
                     blockPositions2.push_back(std::make_pair(x, 0));
                 }
@@ -1586,7 +1706,9 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
     for (int i{}; i < 7; i++) {
         for (int k{}; k < 6; k++) {
             if (board->at(k).at(i) == 2) {
-                return i;
+                if (checkAvailablility(board, i).first) {
+                    return i;
+                }
             }
         }
     }
@@ -1594,12 +1716,9 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
 }
 
 
-
 std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr) 
 {
     std::cout << "started" << std::endl; system("pause");
-
-    if (arr.size() < 3) { std::cout << "really" << std::endl; exit(0); }
 
     std::vector<std::pair<int, int>> compArr{};
     for (int i{}; i < arr.size(); i++) {
@@ -1647,4 +1766,14 @@ std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr)
             return bestChoice;
         }
     }
+}
+
+
+std::pair <bool, int> checkAvailablility(std::vector<std::vector<int>>* board, int x) {
+    for (int i = ROW_HEIGHT - 1; i >= 0; i--) {
+        if (board->at(i).at(x) == 0) {
+            return {true, i};
+        }
+    }
+    return {false, -1};
 }
