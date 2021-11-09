@@ -236,7 +236,7 @@ void createPlayers(Player* p1, Player* p2, bool aiMode) {
 void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
 {
     std::vector <std::vector <int>> board{};
-    std::pair <bool, int> returnResult (false, 0);
+    std::tuple <bool, int, int, int, std::string> returnResult (false, 0, 0, 0, "");
 
     // Init board
     for (int i{}; i < ROW_HEIGHT; i++) { 
@@ -253,7 +253,6 @@ void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
 
         if (currentPlayer == p1) {
             checkInput(&board, currentPlayer, p1, p2);
-            
         }
         else {
             aiMove(&board, currentPlayer, p1, p2);
@@ -262,12 +261,12 @@ void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
         
         returnResult = checkWin(&board);
 
-        if (returnResult.first) { // If game is won
+        if (std::get<0>(returnResult)) { // If game is won
             printBoard(&board, aiMode, currentPlayer, p1, p2);
-            if (returnResult.second == 1) {
+            if (std::get<1>(returnResult) == 1) {
                 std::cout << p1->name << " has won!" << std::endl;
             }
-            else if (returnResult.second == 2) {
+            else if (std::get<1>(returnResult) == 2) {
                 std::cout << p2->name << " has won!" << std::endl;
             }
             system("pause");
@@ -330,11 +329,11 @@ void saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer,
 }
 
 
-void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentPlayer, Player* &p1, Player* &p2) 
+void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& currentPlayer, Player*& p1, Player*& p2, std::tuple<bool, int, int, int, std::string> winInfo)
 {
     system("cls");
-    /*if (aiMode) { std::cout << "Player versus AI." << std::endl; }
-    else { std::cout << "Player versus player." << std::endl; }*/
+    if (aiMode) { std::cout << "Player versus AI." << std::endl; }
+    else { std::cout << "Player versus player." << std::endl; }
 
     std::cout << std::endl;
 
@@ -353,34 +352,39 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player* &curr
         std::cout << currentPlayer->name << "'s turn!" << std::endl << std::endl;
     }
  
-    
-
-    std::vector <std::vector<int>> arr{};
-    std::vector <int> temp{};
-    if (dir != "") {
-        if (dir == "hor") {
-            arr.push_back({ winPos.first, winPos.second });
-            arr.push_back({ winPos.first, winPos.second-1 });
-            arr.push_back({ winPos.first, winPos.second-2 });
-            arr.push_back({ winPos.first, winPos.second-3 });
+    std::vector<std::vector<int>> arr{};
+    if (std::get<0>(winInfo)) {
+        if (std::get<4>(winInfo) == "hor") {
+            for (int i{}; i < 4; i++) {
+                std::vector<int> tempArr{};
+                tempArr.push_back(std::get<2>(winInfo)); // y
+                tempArr.push_back(std::get<3>(winInfo) - 1); // x
+                arr.push_back(tempArr);
+            }
         }
-        else if (dir == "ver") {
-            arr.push_back({ winPos.first, winPos.second });
-            arr.push_back({ winPos.first-1, winPos.second });
-            arr.push_back({ winPos.first-2, winPos.second });
-            arr.push_back({ winPos.first-3, winPos.second });
+        else if (std::get<4>(winInfo) == "ver") {
+            for (int i{}; i < 4; i++) {
+                std::vector<int> tempArr{};
+                tempArr.push_back(std::get<2>(winInfo) - 1); // y
+                tempArr.push_back(std::get<3>(winInfo)); // x
+                arr.push_back(tempArr);
+            }
         }
-        else if (dir == "dr") {
-            arr.push_back({ winPos.first, winPos.second });
-            arr.push_back({ winPos.first - 1, winPos.second - 1 });
-            arr.push_back({ winPos.first - 2, winPos.second - 2 });
-            arr.push_back({ winPos.first - 3, winPos.second - 3 });
+        else if (std::get<4>(winInfo) == "dr") {
+            for (int i{}; i < 4; i++) {
+                std::vector<int> tempArr{};
+                tempArr.push_back(std::get<2>(winInfo) - 1); // y
+                tempArr.push_back(std::get<3>(winInfo) - 1); // x
+                arr.push_back(tempArr);
+            }
         }
-        else if (dir == "dl") {
-            arr.push_back({ winPos.first, winPos.second });
-            arr.push_back({ winPos.first - 1, winPos.second + 1 });
-            arr.push_back({ winPos.first - 2, winPos.second + 2 });
-            arr.push_back({ winPos.first - 3, winPos.second + 3 });
+        else if (std::get<4>(winInfo) == "dl") {
+            for (int i{}; i < 4; i++) {
+                std::vector<int> tempArr{};
+                tempArr.push_back(std::get<2>(winInfo) + 1); // y
+                tempArr.push_back(std::get<3>(winInfo) - 1); // x
+                arr.push_back(tempArr);
+            }
         }
     }
 
@@ -403,7 +407,7 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player* &curr
         
         for (int x{}; x < ROW_WIDTH; x++) {
             stop = false;
-            if (dir != "") {
+            if (std::get<0>(winInfo)) {
                 for (int g{}; g < arr.size(); g++) {
                     if (arr[g][0] == y && arr[g][1] == x) {
                         std::cout << pR << termcolor::on_bright_cyan << " O " << reset;
@@ -485,7 +489,7 @@ void insertMarker(std::vector<std::vector<int>>* board, Player*& currentPlayer, 
 }
 
 
-std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
+std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<int>>* board)
 {
     int p1Counter{}, p2Counter{};
 
@@ -507,10 +511,7 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = i;
-                winPos.second = k;
-                dir = "hor";
-                return std::make_pair(true, board->at(i).at(k));
+                return std::make_tuple( true, board->at(i).at(k), i, k, "hor" );
             }
         }
     }
@@ -536,10 +537,7 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = k;
-                winPos.second = i;
-                dir = "ver";
-                return std::make_pair(true, board->at(k).at(i));
+                return std::make_tuple(true, board->at(k).at(i), k, i, "ver");
             }
         }
     }
@@ -574,10 +572,7 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = v;
-                winPos.second = h;
-                dir = "dr";
-                return std::make_pair(true, board->at(v).at(h));
+                return std::make_tuple(true, board->at(v).at(h), v, h, "dr");
             }
             v++;
         }
@@ -609,10 +604,7 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = v;
-                winPos.second = h;
-                dir = "dr";
-                return std::make_pair(true, board->at(v).at(h));
+                return std::make_tuple(true, board->at(v).at(h), v, h, "dr");
             }
             h++;
         }
@@ -643,10 +635,7 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 p2Counter = 0;
             }
             if (p1Counter == 4 || p2Counter == 4) {
-                winPos.first = v;
-                winPos.second = h;
-                dir = "dl";
-                return std::make_pair(true, board->at(v).at(h));
+                return std::make_tuple(true, board->at(v).at(h), v, h, "dl");
             }
             v++;
         }
@@ -680,13 +669,13 @@ std::pair<bool, int> checkWin(std::vector<std::vector<int>>* board)
                 winPos.first = v;
                 winPos.second = h;
                 dir = "dl";
-                return std::make_pair(true, board->at(v).at(h));
+                return std::make_tuple(true, board->at(v).at(h), v, h, "dl");
             }
             h--;
         }
         z++;
     }
-    return std::make_pair(false, 0);
+    return std::make_tuple(false, 0, 0, 0, "");
 }
 
 
@@ -899,13 +888,9 @@ void aiMove(std::vector<std::vector<int>>* board, Player* &currentPlayer, Player
     int blockPos = getAiInfo(board);
     if (blockPos != -1) {
         p2->pos = blockPos;
-        std::cout << p2->pos << std::endl;
-        Sleep(1000);
     }
     else {
         p2->pos = rand() % 6 + 1;
-        std::cout << "random" << std::endl;
-        Sleep(1000);
     }
     
     insertMarker(board, currentPlayer, p1, p2);
@@ -1146,13 +1131,13 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
 
     /* Priority system, AI will check for all cases and rank them according to how urgent they are.
     * Priorities:
-       AI has 3 in a row:                   4
-       Player has 3 in a row:               3
-       Player has 2 in a row in the open:   2
-       AI has 2 in a row in the open:       1
-       Player has 2 in a row:               0
+       AI has 3 in a row:                   6
+       Player has 3 in a row:               5
+       AI has 2 in a row in the open:       4
+       Player has 2 in a row in the open:   3
+       AI has 2 in a row:                   2
+       Player has 2 in a row:               1
     */
-
 
 
     //Find AI win positions for 3 in a row
@@ -1171,7 +1156,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
                 Vertical remanins zero. */
                 if (board->at(y).at(x + 1) == 0) { // Check if spot is available
                     if (y == 5 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
-                        winPositions3.push_back({ x + 1, 3 });
+                        winPositions3.push_back({ x + 1, 6 });
                     }
                 }
             }
@@ -1179,7 +1164,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x - 3 >= 0) { // Check if spot exists
                 if (board->at(y).at(x - 3) == 0) { // Check if spot is available
                     if (y == 5 || board->at(y + 1).at(x - 3) != 0) { // Check if the marker will be supported
-                        winPositions3.push_back(std::make_pair(x - 3, 3));
+                        winPositions3.push_back(std::make_pair(x - 3, 6));
                     }
                 }
             }
@@ -1188,7 +1173,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             // Don't need to check in front here, because of gravity ensures there will always be a marker under
             if (y - 3 >= 0) { // Check behind
                 if (board->at(y - 3).at(x) == 0) {
-                    winPositions3.push_back(std::make_pair(x, 3));
+                    winPositions3.push_back(std::make_pair(x, 6));
                 }
             }
         }
@@ -1196,14 +1181,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x + 1 < 7 && y + 1 < 6) {
                 if (board->at(y + 1).at(x + 1) == 0) {
                     if (y + 1 == 5 || board->at(y + 2).at(x + 1) != 0) {
-                        winPositions3.push_back(std::make_pair(x + 1, 3));
+                        winPositions3.push_back(std::make_pair(x + 1, 6));
                     }
                 }
             }
             if (x - 3 >= 0 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x - 3) == 0) {
                     if (board->at(y - 2).at(x - 3) != 0) {
-                        winPositions3.push_back(std::make_pair(x - 3, 3));
+                        winPositions3.push_back(std::make_pair(x - 3, 6));
                     }
                 }
             }
@@ -1212,14 +1197,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x - 1 >= 0 && y + 1 < 6) {
                 if (board->at(y + 1).at(x - 1) == 0) {
                     if (board->at(y + 2).at(x - 1) != 0) {
-                        winPositions3.push_back(std::make_pair(x - 1, 3));
+                        winPositions3.push_back(std::make_pair(x - 1, 6));
                     }
                 }
             }
             if (x + 3 < 7 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x + 3) == 0) {
                     if (board->at(y - 2).at(x + 3) != 0) {
-                        winPositions3.push_back(std::make_pair(x + 3, 3));
+                        winPositions3.push_back(std::make_pair(x + 3, 6));
                     }
                 }
             }
@@ -1254,14 +1239,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    winPositions2.push_back(std::make_pair(x + 1, 1));
-                    winPositions2.push_back(std::make_pair(x - 2, 1));
+                    winPositions2.push_back(std::make_pair(x + 1, 4));
+                    winPositions2.push_back(std::make_pair(x - 2, 4));
                 }
                 else if (front) {
-                    winPositions2.push_back(std::make_pair(x + 1, 0));
+                    winPositions2.push_back(std::make_pair(x + 1, 2));
                 }
                 else if (back) {
-                    winPositions2.push_back(std::make_pair(x - 2, 0));
+                    winPositions2.push_back(std::make_pair(x - 2, 2));
                 }
             }
         }
@@ -1269,18 +1254,18 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             // Don't need to check in front here, because of gravity ensures there will always be a marker under
             if (y - 3 >= 0) { // Check behind
                 if (board->at(y - 2).at(x) == 0) {
-                    winPositions2.push_back(std::make_pair(x, 0));
+                    winPositions2.push_back(std::make_pair(x, 2));
                 }
             }
         }
         else if (dir == "dr") { // Diagonal right
-            if (x + 2 < 7 && y + 2 < 6) {
+            if (x + 1 < 7 && y + 1 < 6) {
                 if (board->at(y + 1).at(x + 1) == 0) {
                     if (y < 4) {
                         if (board->at(y + 2).at(x + 1) != 0) {
                             front = true;
                         }
-                    } else if (y == 5) {
+                    } else if (y == 4) {
                         front = true;
                     }
                 }
@@ -1294,26 +1279,26 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    winPositions2.push_back(std::make_pair(x + 1, 1));
-                    winPositions2.push_back(std::make_pair(x - 2, 1));
+                    winPositions2.push_back(std::make_pair(x + 1, 4));
+                    winPositions2.push_back(std::make_pair(x - 2, 4));
                 }
                 else if (front) {
-                    winPositions2.push_back(std::make_pair(x + 1, 0));
+                    winPositions2.push_back(std::make_pair(x + 1, 2));
                 }
                 else if (back) {
-                    winPositions2.push_back(std::make_pair(x - 2, 0));
+                    winPositions2.push_back(std::make_pair(x - 2, 2));
                 }
             }
         }
         else if (dir == "dl") { // Diagonal left
             if (x - 1 >= 0 && y + 1 < 6) {
-                if (board->at(y + 1).at(x - 1) == 0) {
+                if (board->at(y + 1).at(x - 1) == 0) { 
                     if (y < 4) {
                         if (board->at(y + 2).at(x - 1) != 0) {
                             front = true;
                         }
                     }
-                    else if (y == 5) {
+                    else if (y == 4) {
                         front = true;
                     }
                     
@@ -1328,18 +1313,19 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    winPositions2.push_back(std::make_pair(x - 1, 1));
-                    winPositions2.push_back(std::make_pair(x - 1, 1));
+                    winPositions2.push_back(std::make_pair(x - 1, 4));
+                    winPositions2.push_back(std::make_pair(x - 1, 4));
                 }
                 else if (front) {
-                    winPositions2.push_back(std::make_pair(x - 1, 0));
+                    winPositions2.push_back(std::make_pair(x - 1, 2));
                 }
                 else if (back) {
-                    winPositions2.push_back(std::make_pair(x + 2, 0));
+                    winPositions2.push_back(std::make_pair(x + 2, 2));
                 }
             }
         }
     }
+
 
     //---------------------------------------------------------------------//
 
@@ -1360,7 +1346,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
                 Vertical remanins zero. */
                 if (board->at(y).at(x + 1) == 0) { // Check if spot is available
                     if (y == 5 || board->at(y + 1).at(x + 1) != 0) { // Check if the marker will be supported (gravity)
-                        blockPositions3.push_back(std::make_pair(x + 1, 3));
+                        blockPositions3.push_back(std::make_pair(x + 1, 5));
                     }
                 } 
             }
@@ -1368,7 +1354,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x - 3 >= 0) { // Check if spot exists
                 if (board->at(y).at(x - 3) == 0) { // Check if spot is available
                     if (y == 5 || board->at(y + 1).at(x - 3) != 0) { // Check if the marker will be supported
-                        blockPositions3.push_back(std::make_pair(x - 3, 3));
+                        blockPositions3.push_back(std::make_pair(x - 3, 5));
                     }
                 }
             }
@@ -1377,7 +1363,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             // Don't need to check in front here, because of gravity ensures there will always be a marker under
             if (y - 3 >= 0) { // Check behind
                 if (board->at(y - 3).at(x) == 0) {
-                    blockPositions3.push_back(std::make_pair(x, 3));
+                    blockPositions3.push_back(std::make_pair(x, 5));
                 }
             }
         }
@@ -1385,14 +1371,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x + 1 < 7 && y + 1 < 6) {
                 if (board->at(y + 1).at(x + 1) == 0) {
                     if (y + 1 == 5 || board->at(y + 2).at(x + 1) != 0) {
-                        blockPositions3.push_back(std::make_pair(x + 1, 3));
+                        blockPositions3.push_back(std::make_pair(x + 1, 5));
                     }
                 }
             }
             if (x - 3 >= 0 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x - 3) == 0) {
                     if (board->at(y - 2).at(x - 3) != 0) {
-                        blockPositions3.push_back(std::make_pair(x - 3, 3));
+                        blockPositions3.push_back(std::make_pair(x - 3, 5));
                     }
                 }
             }
@@ -1401,14 +1387,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             if (x - 1 >= 0 && y + 1 < 6) {
                 if (board->at(y + 1).at(x - 1) == 0) {
                     if (board->at(y + 2).at(x - 1) != 0) {
-                        blockPositions3.push_back(std::make_pair(x - 1, 3));
+                        blockPositions3.push_back(std::make_pair(x - 1, 5));
                     }
                 }
             }
             if (x + 3 < 7 && y - 3 >= 0) {
                 if (board->at(y - 3).at(x + 3) == 0) {
                     if (board->at(y - 2).at(x + 3) != 0) {
-                        blockPositions3.push_back(std::make_pair(x + 3, 3));
+                        blockPositions3.push_back(std::make_pair(x + 3, 5));
                     }
                 }
             }
@@ -1443,14 +1429,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    blockPositions2.push_back(std::make_pair(x + 1, 1));
-                    blockPositions2.push_back(std::make_pair(x - 2, 1));
+                    blockPositions2.push_back(std::make_pair(x + 1, 3));
+                    blockPositions2.push_back(std::make_pair(x - 2, 3));
                 }
                 else if (front) {
-                    blockPositions2.push_back(std::make_pair(x + 1, 0));
+                    blockPositions2.push_back(std::make_pair(x + 1, 1));
                 }
                 else if (back) {
-                    blockPositions2.push_back(std::make_pair(x - 2, 0));
+                    blockPositions2.push_back(std::make_pair(x - 2, 1));
                 }
             }
         }
@@ -1470,6 +1456,9 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
                             front = true;
                         }
                     }
+                    else if (y == 4) {
+                        front = true;
+                    }
                 }
             }
             if (x - 2 >= 0 && y - 2 >= 0) {
@@ -1481,23 +1470,29 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    blockPositions2.push_back(std::make_pair(x + 1, 1));
-                    blockPositions2.push_back(std::make_pair(x - 2, 1));
+                    blockPositions2.push_back(std::make_pair(x + 1, 3));
+                    blockPositions2.push_back(std::make_pair(x - 2, 3));
                 }
                 else if (front) {
-                    blockPositions2.push_back(std::make_pair(x + 1, 0));
+                    blockPositions2.push_back(std::make_pair(x + 1, 1));
                 }
                 else if (back) {
-                    blockPositions2.push_back(std::make_pair(x - 2, 0));
+                    blockPositions2.push_back(std::make_pair(x - 2, 1));
                 }
             }
         }
         else if (dir == "dl") { // Diagonal left
             if (x - 1 >= 0 && y + 1 < 6) {
                 if (board->at(y + 1).at(x - 1) == 0) {
-                    if (board->at(y + 2).at(x - 1) != 0) {
+                    if (y < 4) {
+                        if (board->at(y + 2).at(x - 1) != 0) {
+                            front = true;
+                        }
+                    }
+                    else if (y == 4) {
                         front = true;
                     }
+                    
                 }
             }
             if (x + 2 < 7 && y - 2 >= 0) {
@@ -1509,91 +1504,147 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
             if (front || back) {
                 if (front && back) {
-                    blockPositions2.push_back(std::make_pair(x - 1, 1));
-                    blockPositions2.push_back(std::make_pair(x + 2, 1));
+                    blockPositions2.push_back(std::make_pair(x - 1, 3));
+                    blockPositions2.push_back(std::make_pair(x + 2, 3));
                 }
                 else if (front) {
-                    blockPositions2.push_back(std::make_pair(x - 1, 0));
+                    blockPositions2.push_back(std::make_pair(x - 1, 1));
                 }
                 else if (back) {
-                    blockPositions2.push_back(std::make_pair(x + 2, 0));
+                    blockPositions2.push_back(std::make_pair(x + 2, 1));
                 }
             }
         }
     }
 
 
-    // Decide which x position to return based on priorities
+    // Winpos3 takes highest priority no matter what
     if (winPositions3.size() > 0) {
         return winPositions3[0].first;
     }
-    else if (blockPositions3.size() > 0) {
+
+
+    // Find if there are any multi-block opptertunities
+    if (blockPositions3.size() > 0) {
         if (blockPositions3.size() > 1) {
-            std::vector<std::pair<int, int>> compArr{};
-            for (int i{}; i < blockPositions3.size(); i++) {
-                if (i == 0) {
-                    compArr.push_back({ blockPositions3[i].first, 0 });
-                }
-                for (int k{}; k < compArr.size(); k++) {
-                    if (blockPositions3[i].first == compArr[k].first) {
-                        compArr[k].second += 1;
-                        break;
-                    }
-                    if (k == compArr.size() - 1) {
-                        compArr.push_back({ blockPositions3[i].first, 0 });
-                    }
-                }
-            }
-            std::pair<int, int> bestChoice(0, 0);
-            for (int i{}; i < compArr.size(); i++) {
-                if (compArr[i].second > bestChoice.second) {
-                    bestChoice = compArr[i];
-                }
-            }
-            if (bestChoice.second > 1) {
-                std::cout << "AI used double block!" << std::endl;
-                Sleep(2000);
-            }
-            return bestChoice.first;
+            std::pair <int, int> bp3 = getBestInt(blockPositions3);
+            return bp3.first;
         }
         else {
             return blockPositions3[0].first;
         }
     }
-    else if (blockPositions2.size() > 0) { // With 2 open spaces
-        if (blockPositions2.size() > 1) {
-            std::vector<std::pair<int, int>> compArr{};
-            for (int i{}; i < blockPositions2.size(); i++) {
-                if (i == 0) {
-                    compArr.push_back({ blockPositions2[i].first, 0 });
-                }
-                for (int k{}; k < compArr.size(); k++) {
-                    if (blockPositions2[i].first == compArr[k].first) {
-                        compArr[k].second += 1;
-                        break;
-                    }
-                    if (k == compArr.size() - 1 && blockPositions2[i].second > 0) { // Only checking higher-than 0 priority
-                        compArr.push_back({ blockPositions2[i].first, 0 });
-                    }
-                }
-            }
-            std::pair<int, int> bestChoice(0, 0);
-            for (int i{}; i < compArr.size(); i++) {
-                if (compArr[i].second > bestChoice.second) {
-                    bestChoice = compArr[i];
-                }
-            }
-            if (bestChoice.second > 1) {
-                std::cout << "AI used double block!" << std::endl;
-                Sleep(2000);
-            }
-            return bestChoice.first;
+
+
+    if (winPositions2.size() > 0 && blockPositions2.size() > 0) {
+        // Find if there are any multi-block oppertunities
+        bool winOK = false;
+        bool blockOK = false;
+        std::pair <int, int> wp2{};
+        std::pair <int, int> bp2{};
+
+
+        if (winPositions2.size() > 1) {
+            wp2 = getBestInt(winPositions2);
+            winOK = true;
         }
-        else {
+        if (winPositions2.size() > 1) {
+            bp2 = getBestInt(blockPositions2);
+            blockOK = true;
+        }
+
+        if (winOK && blockOK) {
+            if (wp2.second > bp2.second) {
+                if (wp2.second != 1) {
+                    return wp2.first;
+                }
+            }
+            else {
+                if (bp2.second != 1) {
+                    return bp2.first;
+                }
+            }
+        }
+        else if (winPositions2[0].second > blockPositions2[0].second) {
+            if (winPositions2[0].second > 0) {
+                return winPositions2[0].first;
+            }
+        }
+        else if (blockPositions2[0].second > 0) {
             return blockPositions2[0].first;
         }
     }
+    else if (winPositions2.size() > 0) {
+        return winPositions2[0].first;
+    }
+    else if (blockPositions2.size() > 0) {
+        return blockPositions2[0].first;
+    }
 
+    
+    
+    for (int i{}; i < 7; i++) {
+        for (int k{}; k < 6; k++) {
+            if (board->at(k).at(i) == 2) {
+                return i;
+            }
+        }
+    }
     return -1;
+}
 
+
+
+std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr) 
+{
+    std::cout << "started" << std::endl; system("pause");
+
+    if (arr.size() < 3) { std::cout << "really" << std::endl; exit(0); }
+
+    std::vector<std::pair<int, int>> compArr{};
+    for (int i{}; i < arr.size(); i++) {
+        if (i == 0) {
+            compArr.push_back({ arr[i].first, 0 });
+        }
+        for (int k{}; k < compArr.size(); k++) {
+            if (arr[i].first == compArr[k].first) {
+                compArr[k].second += 1;
+                break;
+            }
+            if (k == compArr.size() - 1) {
+                compArr.push_back({ arr[i].first, 0 });
+            }
+        }
+    }
+
+    std::pair<int, int> bestChoice(0, 0);
+    for (int i{}; i < compArr.size(); i++) { // Find element with higest number of duplicates/requests
+        if (compArr[i].second > bestChoice.second) {
+            bestChoice = compArr[i];
+        }
+    }
+
+    if (bestChoice.second > 1) {
+        bestChoice.second++;
+    }
+
+    for (int i{}; i < arr.size(); i++) { // Check if that element can match the priority of the original array
+        if (bestChoice.second <= arr[i].second) {
+            break;
+        }
+        if (i == arr.size() - 1) {
+            return bestChoice; std::cout << "returned" << std::endl; system("pause");
+        }
+    }
+
+    bestChoice = { 0, 0 };
+    for (int i{}; i < arr.size(); i++) { 
+        if (bestChoice.second < arr[i].second) {
+            bestChoice = arr[i];
+        }
+        if (i == arr.size() - 1) {
+            std::cout << "returned" << std::endl; system("pause");
+            return bestChoice;
+        }
+    }
 }
