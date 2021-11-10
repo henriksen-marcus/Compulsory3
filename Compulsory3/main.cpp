@@ -1,9 +1,19 @@
-﻿#include "declarations.h"
+﻿// Compulsory 3, Marcus Henriksen, Connect 4
+// In this project I decided to use classes for the two players, and make it universal so that the AI
+// can also be the same type of object. I made the AI algorithm myself without following any tutorials.
+// In short, the AI will check for 3 in a rows and 2 in a rows for both players, and append them to
+// seperate vectors. It will then run an extensive check to filter out any moves that will cause problems
+// or are not as viable as the other moves. I call it a "priority and request" system as each check will
+// return a certain priority, and another algoritm will take the best moves, check if any of those moves
+// request the same location, in which case that move will get a higer prority (killing two birds with one stone).
+
+
+#include "declarations.h"
 
 
 int main()
 {
-    srand((unsigned)time(NULL)); // Seed the rand function with the current time
+    srand((unsigned)time(NULL));
     system("color F"); // White
     while (true) { mainMenu(); }
     return 0;
@@ -240,9 +250,9 @@ void connect4(bool aiMode, Player* &p1, Player* &p2, Player* &currentPlayer)
         currentPlayer = p1;
 
         // Init board
-        for (int i{}; i < ROW_HEIGHT; i++) {
+        for (int i{}; i < 6; i++) {
             std::vector <int> temp{};
-            for (int k{}; k < ROW_WIDTH; k++) {
+            for (int k{}; k < 7; k++) {
                 temp.push_back(0);
             }
             board.push_back(temp);
@@ -303,8 +313,10 @@ bool saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer,
         if (pos == 1) { std::cout << pC << " > "; }
         std::cout << "Save & play again" << reset << std::endl;
         if (pos == 2) { std::cout << pC << " > "; }
-        std::cout << "Save & exit" << reset << std::endl;
+        std::cout << "Play again" << reset << std::endl;
         if (pos == 3) { std::cout << pC << " > "; }
+        std::cout << "Save & exit" << reset << std::endl;
+        if (pos == 4) { std::cout << pC << " > "; }
         std::cout << "Exit" << reset << std::endl;
         std::cout << std::endl;
 
@@ -313,14 +325,14 @@ bool saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer,
         case 'W':
         case 'w':
             if (pos == 1) {
-                pos = 3;
+                pos = 4;
                 break;
             }
             pos--;
             break;
         case 'S':
         case 's':
-            if (pos == 3) {
+            if (pos == 4) {
                 pos = 1;
                 break;
             }
@@ -332,19 +344,22 @@ bool saveGamePrompt(std::vector<std::vector<int>>* board, Player* currentPlayer,
                 saveGame(board, p1, p2);
                 std::cout << std::endl;
                 std::cout << "Saving game..." << std::endl;
-                Sleep(300);
+                Sleep(400);
                 return false;
                 break;
             case 2:
+                return false;
+                break;
+            case 3:
                 saveGame(board, p1, p2);
                 std::cout << std::endl;
                 std::cout << "Saving game..." << std::endl;
                 p1->clear();
                 p2->clear();
-                Sleep(300);
+                Sleep(400);
                 return true;
                 break;
-            case 3:
+            case 4:
                 p1->clear();
                 p2->clear();
                 return true;
@@ -425,7 +440,7 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& curr
 
 
     std::string row = " ---------------------";
-    for (int i{}; i < ROW_WIDTH; i++) {
+    for (int i{}; i < 7; i++) {
 
         if (currentPlayer->pos == i) {
             std::cout << pC << "  v" << reset;
@@ -437,10 +452,10 @@ void printBoard(std::vector<std::vector<int>>* board, bool aiMode, Player*& curr
     std::cout << std::endl;
     bool stop = false;
 
-    for (int y{}; y < ROW_HEIGHT; y++) { 
+    for (int y{}; y < 6; y++) { 
         std::cout << "|";
         
-        for (int x{}; x < ROW_WIDTH; x++) {
+        for (int x{}; x < 7; x++) {
 
             switch (board->at(y).at(x)) {
             case 0:
@@ -474,7 +489,7 @@ void checkInput(std::vector<std::vector<int>>* board, Player* &currentPlayer, Pl
         case 'a':
         case 'A':
             if (currentPlayer->pos == 0) {
-                currentPlayer->pos = ROW_WIDTH - 1;
+                currentPlayer->pos = 6;
             }
             else {
                 currentPlayer->pos--;
@@ -482,7 +497,7 @@ void checkInput(std::vector<std::vector<int>>* board, Player* &currentPlayer, Pl
             break;
         case 'd':
         case 'D':
-            if (currentPlayer->pos == ROW_WIDTH - 1) {
+            if (currentPlayer->pos == 6) {
                 currentPlayer->pos = 0;
             }
             else {
@@ -527,10 +542,10 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     int p1Counter{}, p2Counter{};
 
     // Horizontal
-    for (int i{}; i < ROW_HEIGHT; i++) {
+    for (int i{}; i < 6; i++) {
         p1Counter = 0;
         p2Counter = 0;
-        for (int k{}; k < ROW_WIDTH; k++) {
+        for (int k{}; k < 7; k++) {
             if (board->at(i).at(k) == 1) {
                 p1Counter++;
                 p2Counter = 0;
@@ -553,10 +568,10 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     p2Counter = 0;
 
     // Vertical
-    for (int i{}; i < ROW_WIDTH; i++) {
+    for (int i{}; i < 7; i++) {
         p1Counter = 0;
         p2Counter = 0;
-        for (int k{}; k < ROW_HEIGHT; k++) {
+        for (int k{}; k < 6; k++) {
             if (board->at(k).at(i) == 1) {
                 p1Counter++;
                 p2Counter = 0;
@@ -575,9 +590,6 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
         }
     }
 
-    int max_v = ROW_HEIGHT - 4;
-    int max_h = ROW_WIDTH - 4;
-
     int v{}; // Vertical
     int h{}; // Horizontal
     int z{}; // Start position offset
@@ -586,11 +598,11 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     p2Counter = 0;
 
     // Diagonal - Right 1
-    while (z <= max_v) {
+    while (z <= 2) {
         v = z; // Change start position
         p1Counter = 0;
         p2Counter = 0;
-        while (v < ROW_HEIGHT) {
+        while (v < 6) {
             h = v - z;
             if (board->at(v).at(h) == 1) {
                 p1Counter++;
@@ -618,11 +630,11 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     p2Counter = 0;
 
     // Diagonal - Right 2
-    while (z <= max_h) {
+    while (z <= 3) {
         h = z; // Change start position
         p1Counter = 0;
         p2Counter = 0;
-        while (h < ROW_WIDTH) {
+        while (h < 7) {
             v = h - z;
             if (board->at(v).at(h) == 1) {
                 p1Counter++;
@@ -649,7 +661,7 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     p2Counter = 0;
 
     // Diagonal - Left 1
-    while (z <= max_v) {
+    while (z <= 2) {
         v = z; // Change start position
         p1Counter = 0;
         p2Counter = 0;
@@ -680,7 +692,7 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
     p2Counter = 0;
 
     // Diagonal - Left 2
-    while (z < max_h) {
+    while (z < 3) {
         h = 5 - z; // Change start position
         p1Counter = 0;
         p2Counter = 0;
@@ -711,12 +723,10 @@ std::tuple <bool, int, int, int, std::string> checkWin(std::vector<std::vector<i
 
 bool checkForFullBoard(std::vector<std::vector<int>>* board)
 {
-    // Effecient check 
-    for (int i{}; i < ROW_HEIGHT; i++) {
-        for (int k{}; k < ROW_WIDTH; k++) {
-            if (board->at(i).at(k) == 0) {
-                return false;
-            }
+    // Efficient check 
+    for (int i{}; i < 6; i++) {
+        if (board->at(0).at(i) == 0) {
+            return false;
         }
     }
     return true;
@@ -865,9 +875,9 @@ void loadGame() {
         
 
 
-        for (int j{}; j < ROW_HEIGHT; j++) {
+        for (int j{}; j < 6; j++) {
             std::cout << "|";
-            for (int k{}; k < ROW_WIDTH; k++) {
+            for (int k{}; k < 7; k++) {
                 switch (saveGames[i].board[j][k]) {
                 case '0':
                     std::cout << " * ";
@@ -987,7 +997,7 @@ void loadGame() {
 
 void aiMove(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentPlayer, Player* &p1, Player* &p2) {
     std::cout << "Thinking..." << std::endl;
-    Sleep(800);
+    Sleep(600);
     int blockPos = getAiInfo(board);
     int newPos{};
     if (blockPos != -1) {
@@ -996,8 +1006,8 @@ void aiMove(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentP
     else {
         do
         {
-            newPos = rand() % 6 + 1;
-        } while (!checkAvailablility(board, p2->pos).first);
+            newPos = rand() % 7;
+        } while (!checkAvailablility(board, newPos).first);
         
     }
 
@@ -1008,7 +1018,7 @@ void aiMove(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentP
         for (int i{}; i < moveAmount; i++) {
             p2->pos++;
             printBoard(board, aiMode, currentPlayer, p1, p2);
-            Sleep(350);
+            Sleep(330);
         }
     }
     else if (p2->pos > newPos) {
@@ -1016,10 +1026,9 @@ void aiMove(std::vector<std::vector<int>>* board, bool aiMode, Player* &currentP
         for (int i{}; i < moveAmount; i++) {
             p2->pos--;
             printBoard(board, aiMode, currentPlayer, p1, p2);
-            Sleep(350);
+            Sleep(330);
         }
     }
-
     insertMarker(board, currentPlayer, p1, p2);
 }
 
@@ -1036,15 +1045,16 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
     std::vector<std::tuple<int, int, std::string>> aWinPosCurrent{};
 
 
+
     for (int checkLen = 3; checkLen >= 2; checkLen--) {
        
         pWinPosCurrent.clear();
         aWinPosCurrent.clear();
 
-        for (int i{}; i < ROW_HEIGHT; i++) {
+        for (int i{}; i < 6; i++) {
             p1Counter = 0;
             p2Counter = 0;
-            for (int k{}; k < ROW_WIDTH; k++) {
+            for (int k{}; k < 7; k++) {
                 if (board->at(i).at(k) == 1) {
                     p1Counter++;
                     p2Counter = 0;
@@ -1070,10 +1080,10 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         p2Counter = 0;
 
         // Vertical
-        for (int i{}; i < ROW_WIDTH; i++) {
+        for (int i{}; i < 7; i++) {
             p1Counter = 0;
             p2Counter = 0;
-            for (int k{}; k < ROW_HEIGHT; k++) {
+            for (int k{}; k < 6; k++) {
                 if (board->at(k).at(i) == 1) {
                     p1Counter++;
                     p2Counter = 0;
@@ -1095,9 +1105,6 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
             }
         }
 
-        int max_v = ROW_HEIGHT - 4;
-        int max_h = ROW_WIDTH - 4;
-
         int v{}; // Vertical
         int h{}; // Horizontal
         int z{}; // Start position offset
@@ -1106,11 +1113,11 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         p2Counter = 0;
 
         // Diagonal - Right 1
-        while (z <= max_v) {
+        while (z <= 2) {
             v = z; // Change start position
             p1Counter = 0;
             p2Counter = 0;
-            while (v < ROW_HEIGHT) {
+            while (v < 6) {
                 h = v - z;
                 if (board->at(v).at(h) == 1) {
                     p1Counter++;
@@ -1141,11 +1148,11 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         p2Counter = 0;
 
         // Diagonal - Right 2
-        while (z <= max_h) {
+        while (z <= 3) {
             h = z; // Change start position
             p1Counter = 0;
             p2Counter = 0;
-            while (h < ROW_WIDTH) {
+            while (h < 7) {
                 v = h - z;
                 if (board->at(v).at(h) == 1) {
                     p1Counter++;
@@ -1175,7 +1182,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         p2Counter = 0;
 
         // Diagonal - Left 1
-        while (z <= max_v) {
+        while (z <= 2) {
             v = z; // Change start position
             p1Counter = 0;
             p2Counter = 0;
@@ -1209,7 +1216,7 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         p2Counter = 0;
 
         // Diagonal - Left 2
-        while (z < max_h) {
+        while (z < 3) {
             h = 5 - z; // Change start position
             p1Counter = 0;
             p2Counter = 0;
@@ -1637,7 +1644,6 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
         }
     }
 
-
     // Winpos3 takes highest priority no matter what
     if (winPositions3.size() > 0) {
         return winPositions3[0].first;
@@ -1700,15 +1706,14 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
     else if (blockPositions2.size() > 0) {
         return blockPositions2[0].first;
     }
-
-    
     
     for (int i{}; i < 7; i++) {
         for (int k{}; k < 6; k++) {
-            if (board->at(k).at(i) == 2) {
-                if (checkAvailablility(board, i).first) {
-                    return i;
-                }
+            if (board->at(k).at(i) == 2 && checkAvailablility(board, i).first == true) {
+                return i;
+            }
+            else if (board->at(k).at(i) == 1) {
+                break;
             }
         }
     }
@@ -1718,7 +1723,6 @@ int getAiInfo(std::vector<std::vector<int>>* &board) {
 
 std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr) 
 {
-    std::cout << "started" << std::endl; system("pause");
 
     std::vector<std::pair<int, int>> compArr{};
     for (int i{}; i < arr.size(); i++) {
@@ -1752,7 +1756,6 @@ std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr)
             break;
         }
         if (i == arr.size() - 1) {
-            return bestChoice; std::cout << "returned" << std::endl; system("pause");
         }
     }
 
@@ -1762,7 +1765,6 @@ std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr)
             bestChoice = arr[i];
         }
         if (i == arr.size() - 1) {
-            std::cout << "returned" << std::endl; system("pause");
             return bestChoice;
         }
     }
@@ -1770,7 +1772,7 @@ std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr)
 
 
 std::pair <bool, int> checkAvailablility(std::vector<std::vector<int>>* board, int x) {
-    for (int i = ROW_HEIGHT - 1; i >= 0; i--) {
+    for (int i = 5; i >= 0; i--) {
         if (board->at(i).at(x) == 0) {
             return {true, i};
         }

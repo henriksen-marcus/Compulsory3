@@ -17,7 +17,7 @@ Player::~Player() // Deconstructor
 }
 
 
-void Player::printSelf() 
+void Player::printSelf() // Prints out a marker with the player's own color
 {
 	switch (color)
 	{
@@ -37,7 +37,7 @@ void Player::printSelf()
 }
 
 
-void Player::printSelf(bool)
+void Player::printSelf(bool) // Prints out a marker with the player's own color with a white background (only used after game is won)
 {
 	switch (color)
 	{
@@ -57,7 +57,7 @@ void Player::printSelf(bool)
 }
 
 
-void Player::clear()
+void Player::clear() // Resets player variables
 {
 	pos = 0;
 	color = 0;
