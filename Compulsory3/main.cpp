@@ -808,29 +808,37 @@ void loadGame() {
         return;
     }
 
+    try
+    {
+        for (int i{}; i < fileLength; i += 7) {
+            temp.p1Name = fileInfo[i];
+            temp.p1Color = std::stoi(fileInfo[i + 1]);
+            temp.p2Name = fileInfo[i + 2];
+            temp.p2Color = std::stoi(fileInfo[i + 3]);
+            temp.winner = std::stoi(fileInfo[i + 4]);
+            temp.time = std::stoi(fileInfo[i + 5]);
 
-    for (int i{}; i < fileLength; i += 7) {
-        temp.p1Name = fileInfo[i];
-        temp.p1Color = std::stoi(fileInfo[i + 1]);
-        temp.p2Name = fileInfo[i + 2];
-        temp.p2Color = std::stoi(fileInfo[i + 3]);
-        temp.winner = std::stoi(fileInfo[i + 4]);
-        temp.time = std::stoi(fileInfo[i + 5]);
+            std::vector <char> tempArr{};
 
-        std::vector <char> tempArr{};
-
-        for (int k{}; k < 42; k++) {
-            if (k % 7 == 0 && k != 0) {
-                temp.board.push_back(tempArr);
-                tempArr = {};
+            for (int k{}; k < 42; k++) {
+                if (k % 7 == 0 && k != 0) {
+                    temp.board.push_back(tempArr);
+                    tempArr = {};
+                }
+                tempArr.push_back((char)fileInfo[i + 6][k]);
             }
-            tempArr.push_back((char)fileInfo[i + 6][k]);
-        }
-        temp.board.push_back(tempArr);
+            temp.board.push_back(tempArr);
 
-        saveGames.push_back(temp);
-        temp = {};
+            saveGames.push_back(temp);
+            temp = {};
+        }
     }
+    catch (const std::exception&)
+    {
+        std::cout << "There is an error in the save file. One or more saves might be missing." << std::endl;
+        system("pause");
+    }
+    
 
     system("cls");
     std::cout << pC << "===== Saved Games: =====" << reset << reset << std::endl << std::endl;
@@ -1768,6 +1776,7 @@ std::pair <int, int> getBestInt(std::vector <std::pair<int,int>> arr)
             return bestChoice;
         }
     }
+    return std::pair<int, int>();
 }
 
 
